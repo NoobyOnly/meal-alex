@@ -478,4 +478,150 @@
         row.className = "planner-row";
         
         const tag = document.createElement("span");
-        tag.className = `meal-type-tag ${TYPE
+        tag.className = `meal-type-tag ${TYPE_TAGS[type]}`;
+        tag.textContent = type;
+        
+        const sel = document.createElement("select");
+        sel.innerHTML = `<option value="">—</option>` +
+          meals.map(m => `<option value="${encodeURIComponent(m.name)}">${m.name}</option>`).join("");
+        
+        sel.value = weeklyPlan[day]?.[type] ? encodeURIComponent(weeklyPlan[day][type]) : "";
+        
+        sel.onchange = e => {
+          if (!weeklyPlan[day]) weeklyPlan[day] = {};
+          weeklyPlan[day][type] = decodeURIComponent(e.target.value);
+          saveData();
+        };
+        
+        row.appendChild(tag);
+        row.appendChild(sel);
+        dayBody.appendChild(row);
+      });
+      body.appendChild(wrap);
+    });
+  }
+
+  window.resetPlan = function() {
+    if (!confirm("Resetovati ceo nedeljni plan?")) return;
+    weeklyPlan = {};
+    saveData();
+    renderPlanner();
+  };
+
+  // ── GENERATE SHOPPING LIST ────────────────────────────────
+  window.generateShopping = function(daysLimit = null) {
+    let total = 0;
+    const shoppingMap = {};
+    
+    // Računanje opsega dana
+    let daysToProcess = DAYS;
+    if (daysLimit) {
+      const todayIdx = (new Date().getDay() || 7) - 1; // 0 za Ponedeljak, 6 za Nedelju
+      daysToProcess = [];
+      for (let i = 0; i < daysLimit; i++) {
+        daysToProcess.push(DAYS[(todayIdx + i) % 7]);
+      }
+    }
+
+    // Prolazak kroz dane i sakupljanje namirnica
+    DAYS.forEach(day => {
+      MEAL_TYPES.forEach(type => {
+        const mealName = weeklyPlan[day]?.[type];
+        if (!mealName) return;
+        const meal = meals.find(m => m.name === mealName);
+        if (!meal) return;
+
+        // Trošak se uvek računa na nivou cele selektovane strukture
+        if (!daysLimit || daysToProcess.includes(day)) {
+          total += meal.price;
+          meal.ingredients.forEach(i => {
+            if (!shoppingMap[i.name]) shoppingMap[i.name] = [];
+            if (i.amount) shoppingMap[i.name].push(i.amount);
+          });
+        }
+      });
+    });
+
+    document.getElementById("weeklyTotal").textContent = `${total} RSD`;
+    const list = document.getElementById("shoppingList");
+    const entries = Object.entries(shoppingMap);
+
+    if (entries.length === 0) {
+      list.innerHTML = `<div class="empty-state">Nema planiranih obroka za izabrani period.<br>Popuni plan pa generiši listu.</div>`;
+      document.getElementById("uncheckedCount").textContent = "0 / 0 stavki";
+      return;
+    }
+
+    list.innerHTML = entries.map(([name, amounts], index) => {
+      const cleanId = `item_${index}`;
+      const amountsDisplay = amounts.length > 0 ? amounts.join(" + ") : "po potrebi";
+      return `
+        <li class="shopping-item" id="si-${cleanId}">
+          <input type="checkbox" id="cb-${cleanId}" onchange="toggleShoppingItem(this,'${cleanId}')">
+          <label for="cb-${cleanId}">
+            <span class="item-name">${name}</span>
+            <span class="item-amount">${amountsDisplay}</span>
+          </label>
+        </li>`;
+    }).join("");
+    
+    updateUncheckedCount();
+  };
+
+  window.toggleShoppingItem = function(cb, id) {
+    const li = document.getElementById(`si-${id}`);
+    if(!li) return;
+    cb.checked ? li.classList.add("checked") : li.classList.remove("checked");
+    updateUncheckedCount();
+  };
+
+  function updateUncheckedCount() {
+    const all     = document.querySelectorAll("#shoppingList .shopping-item").length;
+    const checked = document.querySelectorAll("#shoppingList .shopping-item.checked").length;
+    document.getElementById("uncheckedCount").textContent = `${all - checked} / ${all} stavki`;
+  }
+
+  // ── STATS ────────────────────────────────────────────────
+  function updateStats() {
+    document.getElementById("statMealCount").textContent = meals.length;
+    if (meals.length === 0) {
+      document.getElementById("statAvgPrice").textContent   = "0 RSD";
+      document.getElementById("statWeekTotal").textContent  = "0 RSD";
+      return;
+    }
+    const total = meals.reduce((s, m) => s + m.price, 0);
+    document.getElementById("statAvgPrice").textContent = `${Math.round(total / meals.length)} RSD`;
+    
+    let weekTotal = 0;
+    DAYS.forEach(day => {
+      MEAL_TYPES.forEach(type => {
+        const meal = meals.find(m => m.name === weeklyPlan[day]?.[type]);
+        if (meal) weekTotal += meal.price;
+      });
+    });
+    document.getElementById("statWeekTotal").textContent = `${weekTotal} RSD`;
+  }
+
+  // ── WEEK LABEL ───────────────────────────────────────────
+  function setWeekLabel() {
+    const now = new Date();
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - (now.getDay() || 7) + 1);
+    const sun = new Date(mon);
+    sun.setDate(mon.getDate() + 6);
+    const fmt = d => d.toLocaleDateString("sr", { day:"numeric", month:"short" });
+    document.getElementById("weekLabel").textContent = `${fmt(mon)} – ${fmt(sun)}`;
+  }
+
+  function renderAll() {
+    window.renderMealsList();
+    renderPlanner();
+    updateStats();
+  }
+
+  // ── INITIALIZATION ───────────────────────────────────────
+  setWeekLabel();
+  initRealtimeSync();
+</script>
+</body>
+</html>
