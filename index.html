@@ -109,6 +109,9 @@
     .shopping-item.checked .item-name { text-decoration: line-through; }
     .shopping-item.checked .item-amount { text-decoration: line-through; }
 
+    /* INFO BADGE FOR PANTRY DEFRAL */
+    .pantry-notice { font-size: 0.68rem; color: #16a34a; font-weight: 500; margin-top: 2px; display: inline-block; background: #f0fdf4; padding: 1px 6px; border-radius: 4px; }
+
     .total-big { font-family: 'Geist Mono', monospace; font-size: 2.5rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1; }
     .total-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
     .divider { height: 1px; background: var(--border); margin: 1rem 0; }
@@ -145,6 +148,7 @@
 </head>
 <body>
 
+<!-- Loading -->
 <div id="loadingScreen">
   <div class="spinner"></div>
   <p>Učitavanje...</p>
@@ -166,12 +170,14 @@
 <nav>
   <button class="tab-btn active" onclick="showTab('planTab', this)">Plan</button>
   <button class="tab-btn" onclick="showTab('mealsTab', this)">Jela</button>
+  <button class="tab-btn" onclick="showTab('pantryTab', this)">Špajz</button>
   <button class="tab-btn" onclick="showTab('shoppingTab', this)">Kupovina</button>
   <button class="tab-btn" onclick="showTab('statsTab', this)">Statistika</button>
 </nav>
 
 <main>
 
+  <!-- PLAN TAB -->
   <div id="planTab" class="tab-content active">
     <div class="card" style="padding:1rem">
       <div class="section-header">
@@ -182,6 +188,7 @@
     </div>
   </div>
 
+  <!-- MEALS TAB -->
   <div id="mealsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Dodaj jelo</span>
@@ -205,16 +212,39 @@
     </div>
   </div>
 
+  <!-- PANTRY (ŠPAJZ) TAB -->
+  <div id="pantryTab" class="tab-content">
+    <div class="card">
+      <span class="card-title">Dodaj u špajz / zalihe</span>
+      <p style="font-size:0.75rem; color:var(--muted); margin-top:-0.5rem; margin-bottom:0.75rem;">
+        Unesi namirnice koje već imaš kod kuće kako bi se automatski oduzele od liste za kupovinu.
+      </p>
+      <div class="form-stack">
+        <input id="pantryItemName" type="text" placeholder="Naziv namirnice (npr. Pirinač)">
+        <input id="pantryItemAmount" type="text" placeholder="Količina/Mera (npr. 500g, 2kom, 1l)">
+        <button class="btn btn-primary btn-full" onclick="addPantryItem()">+ Dodaj u špajz</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-header">
+        <span class="card-title">Stanje u špajzu</span>
+        <span class="badge" id="pantryCountBadge">0</span>
+      </div>
+      <div class="meals-list" id="pantryList"></div>
+    </div>
+  </div>
+
+  <!-- SHOPPING TAB -->
   <div id="shoppingTab" class="tab-content">
     <div class="card">
-      <span class="card-title">Generiši listu</span>
+      <span class="card-title">Generiši listu (Uzima u obzir špajz)</span>
       <div class="btn-row">
         <button class="btn" onclick="generateShopping(2)">Sledeća 2 dana</button>
         <button class="btn btn-primary" onclick="generateShopping()">Cela nedelja</button>
       </div>
     </div>
     <div class="card">
-      <div class="total-label">Ukupan trošak</div>
+      <div class="total-label">Ukupan trošak obroka</div>
       <div class="total-big" id="weeklyTotal">0 RSD</div>
       <div class="divider"></div>
       <div class="total-label">Preostalo za kupiti</div>
@@ -226,6 +256,7 @@
     </div>
   </div>
 
+  <!-- STATS TAB -->
   <div id="statsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Pregled</span>
@@ -264,8 +295,9 @@
   </div>
 </div>
 
+<!-- Firebase Realtime App Script -->
 <script type="module">
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(e => console.log(e));
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(e => console.log(e));
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -288,6 +320,7 @@
 
   let meals      = [];
   let weeklyPlan = {};
+  let pantry     = []; // { name: "...", amount: "..." }
   let editingMealIndex = null;
   let saveTimeout = null;
 
@@ -306,7 +339,7 @@
     saveTimeout = setTimeout(async () => {
       setSyncStatus("syncing");
       try {
-        await setDoc(doc(db, "planner", "data"), { meals, weeklyPlan });
+        await setDoc(doc(db, "planner", "data"), { meals, weeklyPlan, pantry });
         setSyncStatus("synced");
       } catch(e) {
         console.error(e);
@@ -322,6 +355,7 @@
         const d = snap.data();
         meals      = d.meals      || [];
         weeklyPlan = d.weeklyPlan || {};
+        pantry     = d.pantry     || [];
       }
       const loader = document.getElementById("loadingScreen");
       if (loader) loader.style.display = "none";
@@ -341,6 +375,7 @@
     document.getElementById(id).classList.add("active");
     if (btn) btn.classList.add("active");
     if (id === "statsTab")    updateStats();
+    if (id === "pantryTab")   window.renderPantryList();
     if (id === "shoppingTab") window.generateShopping();
   };
 
@@ -431,6 +466,65 @@
     window.closeEditModal();
   };
 
+  // ── PANTRY (ŠPAJZ) LOGIC ─────────────────────────────────
+  window.addPantryItem = function() {
+    const nameEl = document.getElementById("pantryItemName");
+    const amountEl = document.getElementById("pantryItemAmount");
+    
+    const name = nameEl.value.trim();
+    const amount = amountEl.value.trim() || "ima";
+
+    if (!name) return;
+
+    // Ako namirnica vec postoji, spoji ih ili azuriraj
+    const existingIndex = pantry.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
+    if (existingIndex > -1) {
+      pantry[existingIndex].amount = amount;
+    } else {
+      pantry.push({ name, amount });
+    }
+
+    saveData();
+    window.renderPantryList();
+
+    nameEl.value = "";
+    amountEl.value = "";
+    nameEl.focus();
+  };
+
+  window.deletePantryItem = function(idx) {
+    pantry.splice(idx, 1);
+    saveData();
+    window.renderPantryList();
+  };
+
+  window.renderPantryList = function() {
+    const container = document.getElementById("pantryList");
+    if (!container) return;
+    document.getElementById("pantryCountBadge").textContent = pantry.length;
+
+    if (pantry.length === 0) {
+      container.innerHTML = `<div class="empty-state">Špajz je prazan.<br>Dodaj namirnice koje imaš na zalihama.</div>`;
+      return;
+    }
+
+    container.innerHTML = "";
+    pantry.forEach((item, idx) => {
+      const div = document.createElement("div");
+      div.className = "meal-card";
+      div.style.padding = "0.6rem 1rem";
+      div.innerHTML = `
+        <div class="meal-card-info" style="display:flex; align-items:center; justify-content:space-between; padding-right:1rem;">
+          <h3 style="margin-bottom:0;">${item.name}</h3>
+          <span class="price" style="font-size:0.85rem; color:var(--text); background:var(--surface); padding:2px 8px; border-radius:6px; border:1px solid var(--border);">${item.amount}</span>
+        </div>
+        <div class="meal-card-actions">
+          <button class="btn btn-danger" onclick="deletePantryItem(${idx})" style="padding: 4px 8px;">✕</button>
+        </div>`;
+      container.appendChild(div);
+    });
+  };
+
   // ── RENDER MEALS LIST ────────────────────────────────────
   window.renderMealsList = function() {
     const query     = document.getElementById("mealSearch").value.toLowerCase();
@@ -513,17 +607,17 @@
     let total = 0;
     const shoppingMap = {};
     
-    // Računanje opsega dana
+    // Racunanje opsega dana
     let daysToProcess = DAYS;
     if (daysLimit) {
-      const todayIdx = (new Date().getDay() || 7) - 1; // 0 za Ponedeljak, 6 za Nedelju
+      const todayIdx = (new Date().getDay() || 7) - 1; 
       daysToProcess = [];
       for (let i = 0; i < daysLimit; i++) {
         daysToProcess.push(DAYS[(todayIdx + i) % 7]);
       }
     }
 
-    // Prolazak kroz dane i sakupljanje namirnica
+    // Prolazak kroz dane i sakupljanje namirnica iz jela
     DAYS.forEach(day => {
       MEAL_TYPES.forEach(type => {
         const mealName = weeklyPlan[day]?.[type];
@@ -531,15 +625,23 @@
         const meal = meals.find(m => m.name === mealName);
         if (!meal) return;
 
-        // Trošak se uvek računa na nivou cele selektovane strukture
         if (!daysLimit || daysToProcess.includes(day)) {
           total += meal.price;
           meal.ingredients.forEach(i => {
-            if (!shoppingMap[i.name]) shoppingMap[i.name] = [];
-            if (i.amount) shoppingMap[i.name].push(i.amount);
+            if (!shoppingMap[i.name]) shoppingMap[i.name] = { amounts: [], inPantry: false, pantryAmount: "" };
+            if (i.amount) shoppingMap[i.name].amounts.push(i.amount);
           });
         }
       });
+    });
+
+    // PAMETNA LOGIKA: Ukrštanje sakupljenih namirnica sa stanjem u špajzu
+    pantry.forEach(pantryItem => {
+      const matchKey = Object.keys(shoppingMap).find(k => k.toLowerCase() === pantryItem.name.toLowerCase());
+      if (matchKey) {
+        shoppingMap[matchKey].inPantry = true;
+        shoppingMap[matchKey].pantryAmount = pantryItem.amount;
+      }
     });
 
     document.getElementById("weeklyTotal").textContent = `${total} RSD`;
@@ -552,19 +654,36 @@
       return;
     }
 
-    list.innerHTML = entries.map(([name, amounts], index) => {
-      const cleanId = `item_${index}`;
-      const amountsDisplay = amounts.length > 0 ? amounts.join(" + ") : "po potrebi";
-      return `
-        <li class="shopping-item" id="si-${cleanId}">
-          <input type="checkbox" id="cb-${cleanId}" onchange="toggleShoppingItem(this,'${cleanId}')">
+    let finalHtml = "";
+    let itemIdx = 0;
+
+    entries.forEach(([name, data]) => {
+      // Ako namirnica postoji u špajzu, označavamo je ili preskačemo
+      const cleanId = `item_${itemIdx++}`;
+      const amountsDisplay = data.amounts.length > 0 ? data.amounts.join(" + ") : "po potrebi";
+      
+      let pantryBadgeHtml = "";
+      let isChecked = "";
+      let checkedClass = "";
+      
+      if (data.inPantry) {
+        pantryBadgeHtml = `<span class="pantry-notice">Imate u špajzu (${data.pantryAmount})</span>`;
+        // Automatski čekiraj ako već imaš u špajzu
+        isChecked = "checked";
+        checkedClass = "checked";
+      }
+
+      finalHtml += `
+        <li class="shopping-item ${checkedClass}" id="si-${cleanId}">
+          <input type="checkbox" id="cb-${cleanId}" ${isChecked} onchange="toggleShoppingItem(this,'${cleanId}')">
           <label for="cb-${cleanId}">
             <span class="item-name">${name}</span>
-            <span class="item-amount">${amountsDisplay}</span>
+            <span class="item-amount">${amountsDisplay} ${pantryBadgeHtml}</span>
           </label>
         </li>`;
-    }).join("");
-    
+    });
+
+    list.innerHTML = finalHtml;
     updateUncheckedCount();
   };
 
@@ -615,6 +734,7 @@
 
   function renderAll() {
     window.renderMealsList();
+    window.renderPantryList();
     renderPlanner();
     updateStats();
   }
