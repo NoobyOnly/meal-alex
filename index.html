@@ -17,360 +17,119 @@
       --muted: #71717a;
       --radius: 14px;
       --radius-sm: 9px;
-
-      /* Meal type colors */
-      --dorucak:   #fef3c7; --dorucak-text: #92400e; --dorucak-dot: #f59e0b;
-      --uzina:     #ede9fe; --uzina-text:   #5b21b6; --uzina-dot:   #8b5cf6;
-      --rucak:     #dcfce7; --rucak-text:   #166534; --rucak-dot:   #22c55e;
-      --vecera:    #fee2e2; --vecera-text:  #991b1b; --vecera-dot:  #ef4444;
+      --dorucak: #fef3c7; --dorucak-text: #92400e;
+      --uzina:   #ede9fe; --uzina-text:   #5b21b6;
+      --rucak:   #dcfce7; --rucak-text:   #166534;
+      --vecera:  #fee2e2; --vecera-text:  #991b1b;
     }
 
-    body {
-      font-family: 'Geist', 'DM Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding-bottom: 2rem;
-    }
+    body { font-family: 'Geist', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 2rem; }
 
-    /* HEADER */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: sticky;
-      top: 0;
-      z-index: 20;
-    }
-
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 20; }
     .header-left { display: flex; align-items: center; gap: 10px; }
-
-    .logo-dot {
-      width: 28px; height: 28px;
-      background: var(--text);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-    }
-
+    .logo-dot { width: 28px; height: 28px; background: var(--text); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
     .logo-dot svg { width: 16px; height: 16px; fill: white; }
-
     header h1 { font-size: 1rem; font-weight: 600; letter-spacing: -0.02em; }
+    .week-pill { font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--muted); background: var(--bg); border: 1px solid var(--border); padding: 4px 10px; border-radius: 100px; white-space: nowrap; }
 
-    .week-pill {
-      font-family: 'Geist Mono', monospace;
-      font-size: 0.68rem;
-      color: var(--muted);
-      background: var(--bg);
-      border: 1px solid var(--border);
-      padding: 4px 10px;
-      border-radius: 100px;
-      white-space: nowrap;
-    }
+    /* SYNC STATUS */
+    .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #d1d5db; display: inline-block; margin-right: 4px; transition: background 0.3s; }
+    .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
+    .sync-dot.synced  { background: #22c55e; }
+    .sync-dot.error   { background: #ef4444; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .sync-label { font-size: 0.68rem; color: var(--muted); display: flex; align-items: center; }
 
-    /* NAV */
-    nav {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      overflow-x: auto;
-      scrollbar-width: none;
-      padding: 0 1rem;
-    }
+    nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 1rem; }
     nav::-webkit-scrollbar { display: none; }
-
-    .tab-btn {
-      flex-shrink: 0;
-      padding: 0.75rem 1rem;
-      border: none;
-      background: transparent;
-      font-family: inherit;
-      font-size: 0.82rem;
-      font-weight: 400;
-      color: var(--muted);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      margin-bottom: -1px;
-      transition: color 0.15s, border-color 0.15s;
-    }
+    .tab-btn { flex-shrink: 0; padding: 0.75rem 1rem; border: none; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 400; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
     .tab-btn.active { color: var(--text); font-weight: 600; border-bottom-color: var(--text); }
 
-    /* MAIN */
     main { padding: 1.25rem; max-width: 680px; margin: 0 auto; }
-
     .tab-content { display: none; }
     .tab-content.active { display: flex; flex-direction: column; gap: 1rem; }
 
-    /* CARD */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.25rem;
-    }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
+    .card-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; display: block; }
 
-    .card-title {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-bottom: 1rem;
-    }
-
-    /* INPUTS */
-    input, textarea, select {
-      width: 100%;
-      font-family: inherit;
-      font-size: 0.9rem;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 0.65rem 0.9rem;
-      color: var(--text);
-      background: var(--bg);
-      transition: border-color 0.15s, box-shadow 0.15s;
-      outline: none;
-      -webkit-appearance: none;
-    }
-    input:focus, textarea:focus, select:focus {
-      border-color: var(--text);
-      box-shadow: 0 0 0 3px rgba(24,24,27,0.07);
-    }
+    input, textarea, select { width: 100%; font-family: inherit; font-size: 0.9rem; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.65rem 0.9rem; color: var(--text); background: var(--bg); transition: border-color 0.15s, box-shadow 0.15s; outline: none; -webkit-appearance: none; }
+    input:focus, textarea:focus, select:focus { border-color: var(--text); box-shadow: 0 0 0 3px rgba(24,24,27,0.07); }
     textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
-
     .form-stack { display: flex; flex-direction: column; gap: 0.65rem; }
 
-    /* BUTTONS */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      padding: 0.7rem 1.1rem;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-      font-family: inherit;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.15s;
-      background: var(--surface);
-      color: var(--text);
-      gap: 6px;
-    }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.1rem; border-radius: var(--radius-sm); border: 1px solid var(--border); font-family: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.15s; background: var(--surface); color: var(--text); gap: 6px; }
     .btn:active { transform: scale(0.97); }
     .btn-primary { background: var(--text); color: #fff; border-color: var(--text); }
     .btn-primary:hover { opacity: 0.88; }
     .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); font-size: 0.78rem; padding: 5px 8px; }
     .btn-ghost:hover { background: var(--bg); color: var(--text); }
     .btn-danger { background: #fff1f2; color: #be123c; border-color: #fecdd3; font-size: 0.78rem; padding: 5px 10px; }
-    .btn-danger:hover { background: #ffe4e6; }
     .btn-edit { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; font-size: 0.78rem; padding: 5px 10px; }
-    .btn-edit:hover { background: #dbeafe; }
     .btn-full { width: 100%; }
     .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 
-    /* BADGE */
-    .badge {
-      font-family: 'Geist Mono', monospace;
-      font-size: 0.65rem;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      padding: 2px 7px;
-      color: var(--muted);
-    }
-
-    /* SECTION HEADER */
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 1rem;
-    }
+    .badge { font-family: 'Geist Mono', monospace; font-size: 0.65rem; background: var(--bg); border: 1px solid var(--border); border-radius: 100px; padding: 2px 7px; color: var(--muted); }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
     .section-header .card-title { margin-bottom: 0; }
 
-    /* MEAL CARDS */
     .meals-list { display: flex; flex-direction: column; gap: 0.6rem; }
-
-    .meal-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 0.9rem 1rem;
-      background: var(--bg);
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 0.75rem;
-      transition: border-color 0.15s;
-    }
-    .meal-card:hover { border-color: #c4bfb8; }
-
+    .meal-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.9rem 1rem; background: var(--bg); display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
     .meal-card-info { flex: 1; min-width: 0; }
     .meal-card h3 { font-size: 0.9rem; font-weight: 600; margin-bottom: 2px; }
-    .meal-card .price {
-      font-family: 'Geist Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--muted);
-    }
-    .meal-card .ingredients {
-      font-size: 0.75rem;
-      color: var(--muted);
-      margin-top: 5px;
-      line-height: 1.7;
-    }
+    .meal-card .price { font-family: 'Geist Mono', monospace; font-size: 0.75rem; color: var(--muted); }
+    .meal-card .ingredients { font-size: 0.75rem; color: var(--muted); margin-top: 5px; line-height: 1.7; }
     .meal-card-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
-    /* PLANNER */
-    .planner-day {
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      overflow: hidden;
-      background: var(--surface);
-    }
-
-    .planner-day-header {
-      padding: 0.6rem 0.9rem;
-      font-size: 0.78rem;
-      font-weight: 600;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .planner-day-body { display: flex; flex-direction: column; }
-
-    .planner-row {
-      display: flex;
-      align-items: center;
-      padding: 0.5rem 0.9rem;
-      border-bottom: 1px solid var(--border);
-      gap: 0.75rem;
-    }
+    .planner-day { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); }
+    .planner-day-header { padding: 0.6rem 0.9rem; font-size: 0.78rem; font-weight: 600; background: var(--bg); border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    .planner-row { display: flex; align-items: center; padding: 0.5rem 0.9rem; border-bottom: 1px solid var(--border); gap: 0.75rem; }
     .planner-row:last-child { border-bottom: none; }
-
-    .meal-type-tag {
-      flex-shrink: 0;
-      font-size: 0.7rem;
-      font-weight: 600;
-      padding: 3px 9px;
-      border-radius: 100px;
-      min-width: 62px;
-      text-align: center;
-    }
-    .tag-dorucak  { background: var(--dorucak);  color: var(--dorucak-text); }
-    .tag-uzina    { background: var(--uzina);    color: var(--uzina-text); }
-    .tag-rucak    { background: var(--rucak);    color: var(--rucak-text); }
-    .tag-vecera   { background: var(--vecera);   color: var(--vecera-text); }
-
-    .planner-row select {
-      flex: 1;
-      background: transparent;
-      border: 1px solid transparent;
-      padding: 4px 6px;
-      font-size: 0.84rem;
-      border-radius: 6px;
-      color: var(--text);
-    }
+    .meal-type-tag { flex-shrink: 0; font-size: 0.7rem; font-weight: 600; padding: 3px 9px; border-radius: 100px; min-width: 62px; text-align: center; }
+    .tag-dorucak { background: var(--dorucak); color: var(--dorucak-text); }
+    .tag-uzina   { background: var(--uzina);   color: var(--uzina-text); }
+    .tag-rucak   { background: var(--rucak);   color: var(--rucak-text); }
+    .tag-vecera  { background: var(--vecera);  color: var(--vecera-text); }
+    .planner-row select { flex: 1; background: transparent; border: 1px solid transparent; padding: 4px 6px; font-size: 0.84rem; border-radius: 6px; color: var(--text); }
     .planner-row select:hover { border-color: var(--border); background: var(--bg); }
     .planner-row select:focus { border-color: var(--text); background: var(--bg); box-shadow: none; }
 
-    /* SHOPPING */
-    .shopping-item {
-      display: flex;
-      align-items: center;
-      padding: 0.8rem 0;
-      border-bottom: 1px solid var(--border);
-      gap: 0.75rem;
-      transition: opacity 0.2s;
-    }
+    .shopping-item { display: flex; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border); gap: 0.75rem; transition: opacity 0.2s; }
     .shopping-item:last-child { border-bottom: none; }
-
-    .shopping-item input[type=checkbox] {
-      width: 18px; height: 18px;
-      flex-shrink: 0;
-      accent-color: var(--text);
-      cursor: pointer;
-    }
-
-    .shopping-item label {
-      display: flex; flex-direction: column;
-      cursor: pointer; flex: 1;
-    }
+    .shopping-item input[type=checkbox] { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--text); cursor: pointer; }
+    .shopping-item label { display: flex; flex-direction: column; cursor: pointer; flex: 1; }
     .item-name { font-size: 0.88rem; font-weight: 500; }
     .item-amount { font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
-
     .shopping-item.checked { opacity: 0.45; }
     .shopping-item.checked .item-name { text-decoration: line-through; }
     .shopping-item.checked .item-amount { text-decoration: line-through; }
 
-    /* TOTAL */
-    .total-big {
-      font-family: 'Geist Mono', monospace;
-      font-size: 2.5rem;
-      font-weight: 500;
-      letter-spacing: -0.03em;
-      line-height: 1;
-    }
+    .total-big { font-family: 'Geist Mono', monospace; font-size: 2.5rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1; }
     .total-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
 
     .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-
-    .stat-block {
-      padding: 1rem;
-      background: var(--bg);
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
-    }
+    .stat-block { padding: 1rem; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border); }
     .stat-block .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem; }
     .stat-block .stat-value { font-family: 'Geist Mono', monospace; font-size: 1.5rem; font-weight: 500; }
 
-    /* MODAL */
-    .modal-overlay {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.45);
-      z-index: 100; align-items: flex-end; justify-content: center;
-      padding: 0;
-    }
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: flex-end; justify-content: center; }
     .modal-overlay.open { display: flex; }
-
-    .modal {
-      background: var(--surface);
-      border-radius: var(--radius) var(--radius) 0 0;
-      padding: 1.5rem 1.25rem;
-      width: 100%;
-      max-width: 520px;
-      border-top: 1px solid var(--border);
-      animation: slideUp 0.22s ease;
-    }
-
-    @keyframes slideUp {
-      from { transform: translateY(30px); opacity: 0; }
-      to   { transform: translateY(0); opacity: 1; }
-    }
-
-    .modal-handle {
-      width: 36px; height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 0 auto 1.25rem;
-    }
-
+    .modal { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; padding: 1.5rem 1.25rem; width: 100%; max-width: 520px; border-top: 1px solid var(--border); animation: slideUp 0.22s ease; }
+    @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 1.25rem; }
     .modal h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1rem; }
 
-    .empty-state {
-      text-align: center; padding: 2.5rem 1rem;
-      color: var(--muted); font-size: 0.85rem; line-height: 1.6;
-    }
-
+    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
     .search-input-wrap { position: relative; margin-bottom: 0.9rem; }
     .search-input-wrap input { padding-left: 2rem; }
-    .search-icon {
-      position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%);
-      color: var(--muted); pointer-events: none; font-size: 0.85rem;
-    }
+    .search-icon { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; font-size: 0.85rem; }
 
-    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+    /* Loading screen */
+    #loadingScreen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; z-index: 999; }
+    #loadingScreen .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--text); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loadingScreen p { font-size: 0.85rem; color: var(--muted); }
 
     @media (min-width: 520px) {
       .modal { border-radius: var(--radius); margin-bottom: 2rem; }
@@ -380,6 +139,12 @@
 </head>
 <body>
 
+<!-- Loading -->
+<div id="loadingScreen">
+  <div class="spinner"></div>
+  <p>Učitavanje...</p>
+</div>
+
 <header>
   <div class="header-left">
     <div class="logo-dot">
@@ -387,7 +152,10 @@
     </div>
     <h1>Meal Planner</h1>
   </div>
-  <span class="week-pill" id="weekLabel"></span>
+  <div style="display:flex;align-items:center;gap:0.75rem">
+    <span class="sync-label"><span class="sync-dot" id="syncDot"></span><span id="syncText">—</span></span>
+    <span class="week-pill" id="weekLabel"></span>
+  </div>
 </header>
 
 <nav>
@@ -399,7 +167,6 @@
 
 <main>
 
-  <!-- PLAN TAB -->
   <div id="planTab" class="tab-content active">
     <div class="card" style="padding:1rem">
       <div class="section-header">
@@ -410,9 +177,7 @@
     </div>
   </div>
 
-  <!-- JELA TAB -->
   <div id="mealsTab" class="tab-content">
-
     <div class="card">
       <span class="card-title">Dodaj jelo</span>
       <div class="form-stack">
@@ -422,24 +187,20 @@
         <button class="btn btn-primary btn-full" onclick="addMeal()">+ Dodaj jelo</button>
       </div>
     </div>
-
     <div class="card">
       <div class="section-header">
         <span class="card-title">Moja jela</span>
         <span class="badge" id="mealCountBadge">0</span>
       </div>
       <div class="search-input-wrap">
-        <span class="search-icon">&#9906;</span>
+        <span class="search-icon">⌕</span>
         <input id="mealSearch" type="text" placeholder="Pretraži..." oninput="renderMealsList()">
       </div>
       <div class="meals-list" id="mealsList"></div>
     </div>
-
   </div>
 
-  <!-- SHOPPING TAB -->
   <div id="shoppingTab" class="tab-content">
-
     <div class="card">
       <span class="card-title">Generiši listu</span>
       <div class="btn-row">
@@ -447,7 +208,6 @@
         <button class="btn btn-primary" onclick="generateShopping()">Cela nedelja</button>
       </div>
     </div>
-
     <div class="card">
       <div class="total-label">Ukupan trošak</div>
       <div class="total-big" id="weeklyTotal">0 RSD</div>
@@ -455,15 +215,12 @@
       <div class="total-label">Preostalo za kupiti</div>
       <div style="font-family:'Geist Mono',monospace;font-size:1.1rem;color:var(--muted)" id="uncheckedCount">— stavki</div>
     </div>
-
     <div class="card">
       <span class="card-title">Lista za kupovinu</span>
       <ul id="shoppingList" style="list-style:none"></ul>
     </div>
-
   </div>
 
-  <!-- STATS TAB -->
   <div id="statsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Pregled</span>
@@ -486,7 +243,6 @@
 
 </main>
 
-<!-- EDIT MODAL -->
 <div class="modal-overlay" id="editModal" onclick="handleModalClick(event)">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -503,29 +259,83 @@
   </div>
 </div>
 
-<script>
-  const DAYS = ["Ponedeljak","Utorak","Sreda","Četvrtak","Petak","Subota","Nedelja"];
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyD81IjQPT1Qn52jfFONGfP57hk39uvvf3I",
+    authDomain: "planner-alex.firebaseapp.com",
+    projectId: "planner-alex",
+    storageBucket: "planner-alex.firebasestorage.app",
+    messagingSenderId: "61892373505",
+    appId: "1:61892373505:web:28be6431939c911d2c2400"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+
+  const DAYS       = ["Ponedeljak","Utorak","Sreda","Četvrtak","Petak","Subota","Nedelja"];
   const MEAL_TYPES = ["Doručak","Užina","Ručak","Večera"];
-  const TYPE_TAGS = { "Doručak":"tag-dorucak", "Užina":"tag-uzina", "Ručak":"tag-rucak", "Večera":"tag-vecera" };
+  const TYPE_TAGS  = { "Doručak":"tag-dorucak","Užina":"tag-uzina","Ručak":"tag-rucak","Večera":"tag-vecera" };
 
-  let meals = JSON.parse(localStorage.getItem("meals") || "[]");
-  let weeklyPlan = JSON.parse(localStorage.getItem("weeklyPlan") || "{}");
+  let meals      = [];
+  let weeklyPlan = {};
   let editingMealIndex = null;
+  let saveTimeout = null;
 
-  function saveData() {
-    localStorage.setItem("meals", JSON.stringify(meals));
-    localStorage.setItem("weeklyPlan", JSON.stringify(weeklyPlan));
+  // ── SYNC STATUS ──────────────────────────────────────────
+  function setSyncStatus(state) {
+    const dot  = document.getElementById("syncDot");
+    const text = document.getElementById("syncText");
+    dot.className = "sync-dot " + state;
+    text.textContent = state === "syncing" ? "Čuvanje..." : state === "synced" ? "Sačuvano" : "Greška";
   }
 
-  function showTab(id, btn) {
+  // ── SAVE TO FIRESTORE ────────────────────────────────────
+  async function saveData() {
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(async () => {
+      setSyncStatus("syncing");
+      try {
+        await setDoc(doc(db, "planner", "data"), { meals, weeklyPlan });
+        setSyncStatus("synced");
+      } catch(e) {
+        console.error(e);
+        setSyncStatus("error");
+      }
+    }, 600);
+  }
+
+  // ── LOAD FROM FIRESTORE (realtime) ───────────────────────
+  function initRealtimeSync() {
+    onSnapshot(doc(db, "planner", "data"), (snap) => {
+      if (snap.exists()) {
+        const d = snap.data();
+        meals      = d.meals      || [];
+        weeklyPlan = d.weeklyPlan || {};
+      }
+      document.getElementById("loadingScreen").style.display = "none";
+      renderAll();
+    }, (err) => {
+      console.error(err);
+      setSyncStatus("error");
+      document.getElementById("loadingScreen").style.display = "none";
+    });
+  }
+
+  // ── TABS ─────────────────────────────────────────────────
+  window.showTab = function(id, btn) {
     document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     document.getElementById(id).classList.add("active");
     if (btn) btn.classList.add("active");
-    if (id === "statsTab") updateStats();
+    if (id === "statsTab")    updateStats();
     if (id === "shoppingTab") generateShopping();
-  }
+  };
 
+  // ── HELPERS ──────────────────────────────────────────────
   function parseIngredients(text) {
     return text.split("\n").map(line => {
       const parts = line.split(":");
@@ -533,8 +343,9 @@
     }).filter(i => i.name);
   }
 
-  function addMeal() {
-    const name = document.getElementById("mealName").value.trim();
+  // ── ADD MEAL ─────────────────────────────────────────────
+  window.addMeal = function() {
+    const name  = document.getElementById("mealName").value.trim();
     const price = Number(document.getElementById("mealPrice").value) || 0;
     const ingredients = parseIngredients(document.getElementById("mealIngredients").value);
     if (!name) return;
@@ -545,9 +356,10 @@
     document.getElementById("mealPrice").value = "";
     document.getElementById("mealIngredients").value = "";
     document.getElementById("mealName").focus();
-  }
+  };
 
-  function deleteMeal(idx) {
+  // ── DELETE MEAL ──────────────────────────────────────────
+  window.deleteMeal = function(idx) {
     const name = meals[idx].name;
     meals.splice(idx, 1);
     DAYS.forEach(day => {
@@ -557,9 +369,10 @@
     });
     saveData();
     renderAll();
-  }
+  };
 
-  function editMeal(idx) {
+  // ── EDIT MEAL ────────────────────────────────────────────
+  window.editMeal = function(idx) {
     editingMealIndex = idx;
     const meal = meals[idx];
     document.getElementById("editMealName").value = meal.name;
@@ -567,18 +380,18 @@
     document.getElementById("editMealIngredients").value =
       meal.ingredients.map(i => `${i.name}:${i.amount}`).join("\n");
     document.getElementById("editModal").classList.add("open");
-  }
+  };
 
-  function closeEditModal() {
+  window.closeEditModal = function() {
     document.getElementById("editModal").classList.remove("open");
     editingMealIndex = null;
-  }
+  };
 
-  function handleModalClick(e) {
-    if (e.target === document.getElementById("editModal")) closeEditModal();
-  }
+  window.handleModalClick = function(e) {
+    if (e.target === document.getElementById("editModal")) window.closeEditModal();
+  };
 
-  function saveMealEdit() {
+  window.saveMealEdit = function() {
     if (editingMealIndex === null) return;
     const oldName = meals[editingMealIndex].name;
     const newName = document.getElementById("editMealName").value.trim();
@@ -596,20 +409,20 @@
     }
     saveData();
     renderAll();
-    closeEditModal();
-  }
+    window.closeEditModal();
+  };
 
+  // ── RENDER MEALS ─────────────────────────────────────────
   function renderMealsList() {
-    const query = document.getElementById("mealSearch").value.toLowerCase();
+    const query     = document.getElementById("mealSearch").value.toLowerCase();
     const container = document.getElementById("mealsList");
-    const filtered = meals.filter(m => m.name.toLowerCase().includes(query));
+    const filtered  = meals.filter(m => m.name.toLowerCase().includes(query));
     document.getElementById("mealCountBadge").textContent = meals.length;
 
     if (filtered.length === 0) {
       container.innerHTML = `<div class="empty-state">${meals.length === 0 ? "Nema jela.<br>Dodaj prvo jelo iznad." : "Nema rezultata."}</div>`;
       return;
     }
-
     container.innerHTML = "";
     filtered.forEach(meal => {
       const realIdx = meals.indexOf(meal);
@@ -623,31 +436,28 @@
         </div>
         <div class="meal-card-actions">
           <button class="btn btn-edit" onclick="editMeal(${realIdx})">Edit</button>
-          <button class="btn btn-danger" onclick="deleteMeal(${realIdx})">&#10005;</button>
-        </div>
-      `;
+          <button class="btn btn-danger" onclick="deleteMeal(${realIdx})">✕</button>
+        </div>`;
       container.appendChild(div);
     });
   }
 
+  // ── RENDER PLANNER ───────────────────────────────────────
   function renderPlanner() {
     const body = document.getElementById("plannerBody");
     body.innerHTML = "";
     DAYS.forEach(day => {
       const wrap = document.createElement("div");
       wrap.className = "planner-day";
-      wrap.innerHTML = `<div class="planner-day-header">${day}</div><div class="planner-day-body" id="day-${day}"></div>`;
-      body.appendChild(wrap);
+      wrap.innerHTML = `<div class="planner-day-header">${day}</div><div class="planner-day-body"></div>`;
+      const dayBody = wrap.querySelector(".planner-day-body");
 
-      const dayBody = wrap.querySelector(`#day-${day}`);
       MEAL_TYPES.forEach(type => {
         const row = document.createElement("div");
         row.className = "planner-row";
-
         const tag = document.createElement("span");
         tag.className = `meal-type-tag ${TYPE_TAGS[type]}`;
         tag.textContent = type;
-
         const sel = document.createElement("select");
         sel.innerHTML = `<option value="">—</option>` +
           meals.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
@@ -657,22 +467,23 @@
           weeklyPlan[day][type] = e.target.value;
           saveData();
         };
-
         row.appendChild(tag);
         row.appendChild(sel);
         dayBody.appendChild(row);
       });
+      body.appendChild(wrap);
     });
   }
 
-  function resetPlan() {
+  window.resetPlan = function() {
     if (!confirm("Resetovati ceo nedeljni plan?")) return;
     weeklyPlan = {};
     saveData();
     renderPlanner();
-  }
+  };
 
-  function generateShopping(daysLimit = null) {
+  // ── SHOPPING ─────────────────────────────────────────────
+  window.generateShopping = function(daysLimit = null) {
     let total = 0;
     const shoppingMap = {};
     const days = daysLimit ? DAYS.slice(0, daysLimit) : DAYS;
@@ -692,8 +503,7 @@
     });
 
     document.getElementById("weeklyTotal").textContent = `${total} RSD`;
-
-    const list = document.getElementById("shoppingList");
+    const list    = document.getElementById("shoppingList");
     const entries = Object.entries(shoppingMap);
 
     if (entries.length === 0) {
@@ -703,44 +513,41 @@
     }
 
     list.innerHTML = entries.map(([name, amounts]) => {
-      const safeId = name.replace(/[^a-zA-Z0-9]/g, '_');
+      const sid = name.replace(/[^a-zA-Z0-9]/g, '_');
       return `
-        <li class="shopping-item" id="si-${safeId}">
-          <input type="checkbox" id="cb-${safeId}" onchange="toggleShoppingItem(this, '${safeId}')">
-          <label for="cb-${safeId}">
+        <li class="shopping-item" id="si-${sid}">
+          <input type="checkbox" id="cb-${sid}" onchange="toggleShoppingItem(this,'${sid}')">
+          <label for="cb-${sid}">
             <span class="item-name">${name}</span>
             <span class="item-amount">${amounts.join(" + ")}</span>
           </label>
-        </li>
-      `;
+        </li>`;
     }).join("");
-
     updateUncheckedCount();
-  }
+  };
 
-  function toggleShoppingItem(cb, id) {
+  window.toggleShoppingItem = function(cb, id) {
     const li = document.getElementById(`si-${id}`);
-    if (cb.checked) li.classList.add("checked");
-    else li.classList.remove("checked");
+    cb.checked ? li.classList.add("checked") : li.classList.remove("checked");
     updateUncheckedCount();
-  }
+  };
 
   function updateUncheckedCount() {
-    const all = document.querySelectorAll("#shoppingList .shopping-item").length;
+    const all     = document.querySelectorAll("#shoppingList .shopping-item").length;
     const checked = document.querySelectorAll("#shoppingList .shopping-item.checked").length;
     document.getElementById("uncheckedCount").textContent = `${all - checked} / ${all} stavki`;
   }
 
+  // ── STATS ────────────────────────────────────────────────
   function updateStats() {
     document.getElementById("statMealCount").textContent = meals.length;
     if (meals.length === 0) {
-      document.getElementById("statAvgPrice").textContent = "0";
-      document.getElementById("statWeekTotal").textContent = "0 RSD";
+      document.getElementById("statAvgPrice").textContent   = "0";
+      document.getElementById("statWeekTotal").textContent  = "0 RSD";
       return;
     }
     const total = meals.reduce((s, m) => s + m.price, 0);
     document.getElementById("statAvgPrice").textContent = `${Math.round(total / meals.length)} RSD`;
-
     let weekTotal = 0;
     DAYS.forEach(day => {
       MEAL_TYPES.forEach(type => {
@@ -751,6 +558,7 @@
     document.getElementById("statWeekTotal").textContent = `${weekTotal} RSD`;
   }
 
+  // ── WEEK LABEL ───────────────────────────────────────────
   function setWeekLabel() {
     const now = new Date();
     const mon = new Date(now);
@@ -767,8 +575,10 @@
     updateStats();
   }
 
+  // ── INIT ─────────────────────────────────────────────────
   setWeekLabel();
-  renderAll();
+  initRealtimeSync();
+
 </script>
 </body>
 </html>
