@@ -95,7 +95,7 @@
     .tag-uzina   { background: var(--uzina);   color: var(--uzina-text); }
     .tag-rucak   { background: var(--rucak);   color: var(--rucak-text); }
     .tag-vecera  { background: var(--vecera);  color: var(--vecera-text); }
-    .planner-row select { flex: 1; background: transparent; border: 1px solid transparent; padding: 4px 6px; font-size: 0.84rem; border-radius: 6px; color: var(--text); }
+    .planner-row select { flex: 1; background: transparent; border: 1px solid transparent; padding: 4px 6px; font-size: 0.84rem; border-radius: 6px; color: var(--text); -webkit-appearance: select; -moz-appearance: select; appearance: select; }
     .planner-row select:hover { border-color: var(--border); background: var(--bg); }
     .planner-row select:focus { border-color: var(--text); background: var(--bg); box-shadow: none; }
 
@@ -145,7 +145,6 @@
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loadingScreen">
   <div class="spinner"></div>
   <p>Učitavanje...</p>
@@ -265,12 +264,11 @@
   </div>
 </div>
 
-<!-- Firebase -->
 <script type="module">
-  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js");
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(e => console.log(e));
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyD81IjQPT1Qn52jfFONGfP57hk39uvvf3I",
@@ -297,6 +295,7 @@
   function setSyncStatus(state) {
     const dot  = document.getElementById("syncDot");
     const text = document.getElementById("syncText");
+    if(!dot || !text) return;
     dot.className = "sync-dot " + state;
     text.textContent = state === "syncing" ? "Čuvanje..." : state === "synced" ? "Sačuvano" : "Greška";
   }
@@ -316,7 +315,7 @@
     }, 600);
   }
 
-  // ── LOAD FROM FIRESTORE (realtime) ───────────────────────
+  // ── LOAD FROM FIRESTORE (Realtime Listener) ──────────────
   function initRealtimeSync() {
     onSnapshot(doc(db, "planner", "data"), (snap) => {
       if (snap.exists()) {
@@ -324,12 +323,14 @@
         meals      = d.meals      || [];
         weeklyPlan = d.weeklyPlan || {};
       }
-      document.getElementById("loadingScreen").style.display = "none";
+      const loader = document.getElementById("loadingScreen");
+      if (loader) loader.style.display = "none";
       renderAll();
     }, (err) => {
       console.error(err);
       setSyncStatus("error");
-      document.getElementById("loadingScreen").style.display = "none";
+      const loader = document.getElementById("loadingScreen");
+      if (loader) loader.style.display = "none";
     });
   }
 
@@ -340,11 +341,12 @@
     document.getElementById(id).classList.add("active");
     if (btn) btn.classList.add("active");
     if (id === "statsTab")    updateStats();
-    if (id === "shoppingTab") generateShopping();
+    if (id === "shoppingTab") window.generateShopping();
   };
 
   // ── HELPERS ──────────────────────────────────────────────
   function parseIngredients(text) {
+    if (!text) return [];
     return text.split("\n").map(line => {
       const parts = line.split(":");
       return { name: parts[0]?.trim(), amount: parts[1]?.trim() || "" };
@@ -353,17 +355,24 @@
 
   // ── ADD MEAL ─────────────────────────────────────────────
   window.addMeal = function() {
-    const name  = document.getElementById("mealName").value.trim();
-    const price = Number(document.getElementById("mealPrice").value) || 0;
-    const ingredients = parseIngredients(document.getElementById("mealIngredients").value);
+    const nameEl = document.getElementById("mealName");
+    const priceEl = document.getElementById("mealPrice");
+    const ingEl = document.getElementById("mealIngredients");
+
+    const name  = nameEl.value.trim();
+    const price = Number(priceEl.value) || 0;
+    const ingredients = parseIngredients(ingEl.value);
+
     if (!name) return;
     meals.push({ name, price, ingredients });
+    
     saveData();
     renderAll();
-    document.getElementById("mealName").value = "";
-    document.getElementById("mealPrice").value = "";
-    document.getElementById("mealIngredients").value = "";
-    document.getElementById("mealName").focus();
+
+    nameEl.value = "";
+    priceEl.value = "";
+    ingEl.value = "";
+    nameEl.focus();
   };
 
   // ── DELETE MEAL ──────────────────────────────────────────
@@ -403,11 +412,13 @@
     if (editingMealIndex === null) return;
     const oldName = meals[editingMealIndex].name;
     const newName = document.getElementById("editMealName").value.trim();
+    
     meals[editingMealIndex] = {
       name: newName || oldName,
       price: Number(document.getElementById("editMealPrice").value) || 0,
       ingredients: parseIngredients(document.getElementById("editMealIngredients").value)
     };
+
     if (newName && newName !== oldName) {
       DAYS.forEach(day => {
         MEAL_TYPES.forEach(type => {
@@ -420,8 +431,8 @@
     window.closeEditModal();
   };
 
-  // ── RENDER MEALS ─────────────────────────────────────────
-  function renderMealsList() {
+  // ── RENDER MEALS LIST ────────────────────────────────────
+  window.renderMealsList = function() {
     const query     = document.getElementById("mealSearch").value.toLowerCase();
     const container = document.getElementById("mealsList");
     const filtered  = meals.filter(m => m.name.toLowerCase().includes(query));
@@ -453,7 +464,9 @@
   // ── RENDER PLANNER ───────────────────────────────────────
   function renderPlanner() {
     const body = document.getElementById("plannerBody");
+    if(!body) return;
     body.innerHTML = "";
+    
     DAYS.forEach(day => {
       const wrap = document.createElement("div");
       wrap.className = "planner-day";
@@ -463,130 +476,6 @@
       MEAL_TYPES.forEach(type => {
         const row = document.createElement("div");
         row.className = "planner-row";
+        
         const tag = document.createElement("span");
-        tag.className = `meal-type-tag ${TYPE_TAGS[type]}`;
-        tag.textContent = type;
-        const sel = document.createElement("select");
-        sel.innerHTML = `<option value="">—</option>` +
-          meals.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
-        sel.value = weeklyPlan[day]?.[type] || "";
-        sel.onchange = e => {
-          if (!weeklyPlan[day]) weeklyPlan[day] = {};
-          weeklyPlan[day][type] = e.target.value;
-          saveData();
-        };
-        row.appendChild(tag);
-        row.appendChild(sel);
-        dayBody.appendChild(row);
-      });
-      body.appendChild(wrap);
-    });
-  }
-
-  window.resetPlan = function() {
-    if (!confirm("Resetovati ceo nedeljni plan?")) return;
-    weeklyPlan = {};
-    saveData();
-    renderPlanner();
-  };
-
-  // ── SHOPPING ─────────────────────────────────────────────
-  window.generateShopping = function(daysLimit = null) {
-    let total = 0;
-    const shoppingMap = {};
-    const days = daysLimit ? DAYS.slice(0, daysLimit) : DAYS;
-
-    days.forEach(day => {
-      MEAL_TYPES.forEach(type => {
-        const mealName = weeklyPlan[day]?.[type];
-        if (!mealName) return;
-        const meal = meals.find(m => m.name === mealName);
-        if (!meal) return;
-        total += meal.price;
-        meal.ingredients.forEach(i => {
-          if (!shoppingMap[i.name]) shoppingMap[i.name] = [];
-          shoppingMap[i.name].push(i.amount);
-        });
-      });
-    });
-
-    document.getElementById("weeklyTotal").textContent = `${total} RSD`;
-    const list    = document.getElementById("shoppingList");
-    const entries = Object.entries(shoppingMap);
-
-    if (entries.length === 0) {
-      list.innerHTML = `<div class="empty-state">Nema planiranih obroka.<br>Popuni plan pa generiši listu.</div>`;
-      document.getElementById("uncheckedCount").textContent = "— stavki";
-      return;
-    }
-
-    list.innerHTML = entries.map(([name, amounts]) => {
-      const sid = name.replace(/[^a-zA-Z0-9]/g, '_');
-      return `
-        <li class="shopping-item" id="si-${sid}">
-          <input type="checkbox" id="cb-${sid}" onchange="toggleShoppingItem(this,'${sid}')">
-          <label for="cb-${sid}">
-            <span class="item-name">${name}</span>
-            <span class="item-amount">${amounts.join(" + ")}</span>
-          </label>
-        </li>`;
-    }).join("");
-    updateUncheckedCount();
-  };
-
-  window.toggleShoppingItem = function(cb, id) {
-    const li = document.getElementById(`si-${id}`);
-    cb.checked ? li.classList.add("checked") : li.classList.remove("checked");
-    updateUncheckedCount();
-  };
-
-  function updateUncheckedCount() {
-    const all     = document.querySelectorAll("#shoppingList .shopping-item").length;
-    const checked = document.querySelectorAll("#shoppingList .shopping-item.checked").length;
-    document.getElementById("uncheckedCount").textContent = `${all - checked} / ${all} stavki`;
-  }
-
-  // ── STATS ────────────────────────────────────────────────
-  function updateStats() {
-    document.getElementById("statMealCount").textContent = meals.length;
-    if (meals.length === 0) {
-      document.getElementById("statAvgPrice").textContent   = "0";
-      document.getElementById("statWeekTotal").textContent  = "0 RSD";
-      return;
-    }
-    const total = meals.reduce((s, m) => s + m.price, 0);
-    document.getElementById("statAvgPrice").textContent = `${Math.round(total / meals.length)} RSD`;
-    let weekTotal = 0;
-    DAYS.forEach(day => {
-      MEAL_TYPES.forEach(type => {
-        const meal = meals.find(m => m.name === weeklyPlan[day]?.[type]);
-        if (meal) weekTotal += meal.price;
-      });
-    });
-    document.getElementById("statWeekTotal").textContent = `${weekTotal} RSD`;
-  }
-
-  // ── WEEK LABEL ───────────────────────────────────────────
-  function setWeekLabel() {
-    const now = new Date();
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - (now.getDay() || 7) + 1);
-    const sun = new Date(mon);
-    sun.setDate(mon.getDate() + 6);
-    const fmt = d => d.toLocaleDateString("sr", { day:"numeric", month:"short" });
-    document.getElementById("weekLabel").textContent = `${fmt(mon)} – ${fmt(sun)}`;
-  }
-
-  function renderAll() {
-    renderMealsList();
-    renderPlanner();
-    updateStats();
-  }
-
-  // ── INIT ─────────────────────────────────────────────────
-  setWeekLabel();
-  initRealtimeSync();
-
-</script>
-</body>
-</html>
+        tag.className = `meal-type-tag ${TYPE
