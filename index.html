@@ -1,48 +1,114 @@
 <!DOCTYPE html>
+<html lang="sr">
 
-      <div class="bg-white rounded-2xl shadow p-4">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-        <input
-          id="mealName"
-          type="text"
-          placeholder="Naziv jela"
-          class="w-full border rounded-lg p-2 mb-3"
-        >
+  <title>Meal Planner</title>
 
-        <input
-          id="mealPrice"
-          type="number"
-          placeholder="Cena"
-          class="w-full border rounded-lg p-2 mb-3"
-        >
+  <script src="https://cdn.tailwindcss.com"></script>
 
-        <button
-          onclick="addMeal()"
-          class="w-full bg-black text-white rounded-xl p-3"
-        >
-          Dodaj
-        </button>
+  <link rel="stylesheet" href="css/style.css">
+</head>
 
-      </div>
+<body class="bg-gray-100 min-h-screen p-6">
 
-      <div class="bg-white rounded-2xl shadow p-4">
+  <h1 class="text-4xl font-bold mb-6">
+    Meal Planner
+  </h1>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+    <!-- ADD MEAL -->
+    <div class="bg-white rounded-2xl shadow p-4">
+
+      <h2 class="text-2xl font-bold mb-4">
+        Dodaj Jelo
+      </h2>
+
+      <input
+        id="mealName"
+        type="text"
+        placeholder="Naziv jela"
+        class="w-full border rounded-lg p-2 mb-3"
+      >
+
+      <input
+        id="mealPrice"
+        type="number"
+        placeholder="Cena"
+        class="w-full border rounded-lg p-2 mb-3"
+      >
+
+      <button
+        onclick="addMeal()"
+        class="w-full bg-black text-white rounded-xl p-3"
+      >
+        Dodaj
+      </button>
+
+    </div>
+
+    <!-- MEALS LIST -->
+    <div class="bg-white rounded-2xl shadow p-4">
+
+      <div class="flex justify-between items-center mb-4">
+
+        <h2 class="text-2xl font-bold">
+          Moja Jela
+        </h2>
 
         <input
           id="mealSearch"
           type="text"
           placeholder="Search..."
-          class="w-full border rounded-lg p-2 mb-4"
+          class="border rounded-lg p-2"
           oninput="renderMealsList()"
         >
 
-        <div id="mealsList"></div>
-
       </div>
+
+      <div id="mealsList"></div>
 
     </div>
 
-   </div>
+  </div>
 
+  <!-- PLAN -->
+  <div class="bg-white rounded-2xl shadow p-4 mt-6 overflow-auto">
+
+    <h2 class="text-2xl font-bold mb-4">
+      Nedeljni Plan
+    </h2>
+
+    <table class="w-full border-collapse min-w-[700px]">
+
+      <thead>
+
+        <tr class="border-b">
+
+          <th class="text-left p-2">
+            Dan
+          </th>
+
+          <th class="text-left p-2">
+            Doručak
+          </th>
+
+          <th class="text-left p-2">
+            Ručak
+          </th>
+
+        </tr>
+
+      </thead>
+
+      <tbody id="plannerBody"></tbody>
+
+    </table>
+
+  </div>
 
   <!-- JS FILES -->
   <script src="js/config.js"></script>
