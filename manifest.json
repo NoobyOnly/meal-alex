@@ -1,14 +1,16 @@
 {
-  "name": "Meal Planner",
-  "short_name": "Meal Planner",
-  "description": "Nedeljni planer obroka",
-  "start_url": "/meal-alex/",
-  "scope": "/meal-alex/",
-  "display": "standalone",
-  "background_color": "#18181b",
-  "theme_color": "#18181b",
-  "orientation": "portrait",
+  "short_name": "MealPlanner",
+  "name": "Meal Planner Alex",
   "icons": [
-    { "src": "/meal-alex/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
-  ]
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    }
+  ],
+  "start_url": ".",
+  "background_color": "#f7f6f3",
+  "theme_color": "#18181b",
+  "display": "standalone",
+  "orientation": "portrait"
 }
