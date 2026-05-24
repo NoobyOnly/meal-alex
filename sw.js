@@ -1,5 +1,10 @@
 const CACHE = "meal-planner-v1";
-const ASSETS = ["/", "/index.html", "/icon.svg", "/manifest.json"];
+const ASSETS = [
+  "/meal-alex/",
+  "/meal-alex/index.html",
+  "/meal-alex/icon.svg",
+  "/meal-alex/manifest.json"
+];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
