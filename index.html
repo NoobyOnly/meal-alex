@@ -259,7 +259,7 @@
       </p>
       <div class="form-stack">
         <input id="pantryItemName" type="text" placeholder="Naziv namirnice (npr. Jaja)">
-        <input id="pantryItemAmount" type="text" placeholder="Ukupna količina u pakovanju (npr. 10kom, 1000g)">
+        <input id="pantryItemAmount" type="text" placeholder="Ukupna količina u pakovanju (npr. 1000g)">
         <input id="pantryItemPrice" type="number" placeholder="Ukupna cena pakovanja (RSD)" inputmode="numeric">
         <button class="btn btn-primary btn-full" onclick="addPantryItem()">+ Dodaj namirnicu</button>
       </div>
@@ -364,11 +364,13 @@
   </div>
 </div>
 
-<!-- NOVI MODAL: KALENDAR ZA TRACKING (GREBANJE) -->
+<!-- MODAL: KALENDAR ZA TRACKING SA NAVIGACIJOM MESECA -->
 <div class="modal-overlay" id="calendarModal" onclick="handleCalendarModalClick(event)">
   <div class="modal" style="max-width: 420px;">
     <div class="modal-handle"></div>
-    <h2 id="calModalTitle" style="text-align: center; margin-bottom: 0.25rem;">Kalendar praćenja</h2>
+    
+    <!-- Kontejner za naslov i strelice -->
+    <h2 id="calModalTitle" style="margin-bottom: 0.25rem;"></h2>
     <p style="text-align:center; font-size:0.75rem; color:var(--muted); margin-bottom:1rem;">Tapni na dan da ga izgrebeš/poništiš</p>
     
     <div class="cal-grid">
@@ -415,12 +417,16 @@
   let meals       = [];
   let weeklyPlan  = {};
   let pantry      = [];
-  let scratchedDates = {}; // NOVO: Format pamćenja {"2026-05-25": true} za stabilan kalendar kroz mesece
+  let scratchedDates = {}; 
   let localShoppingState = {};
   
   let editingMode = null;
   let editingIndex = null;
   let saveTimeout = null;
+
+  // Praćenje trenutno izabranog meseca unutar kalendara
+  let currentDisplayedMonth = new Date().getMonth();
+  let currentDisplayedYear = new Date().getFullYear();
 
   function setSyncStatus(state) {
     const dot  = document.getElementById("syncDot");
@@ -813,11 +819,11 @@
     });
   };
 
-  // NOVO: KALENDAR I SCRATCH LOGIKA NA TAP
+  // KALENDAR NAVIGACIJA KROZ MESECE
   window.openCalendarModal = function() {
-    const months = ["Januar","Februar","Mart","April","Maj","Jun","Jul","Avgust","Septembar","Oktobar","Novembar","Decembar"];
     const now = new Date();
-    document.getElementById("calModalTitle").textContent = `${months[now.getMonth()]} ${now.getFullYear()}`;
+    currentDisplayedMonth = now.getMonth();
+    currentDisplayedYear = now.getFullYear();
     
     renderCalendarGrid();
     document.getElementById("calendarModal").classList.add("open");
@@ -831,41 +837,61 @@
     if (e.target === document.getElementById("calendarModal")) window.closeCalendarModal();
   };
 
+  window.changeMonth = function(direction) {
+    currentDisplayedMonth += direction;
+    if (currentDisplayedMonth > 11) {
+      currentDisplayedMonth = 0;
+      currentDisplayedYear++;
+    } else if (currentDisplayedMonth < 0) {
+      currentDisplayedMonth = 11;
+      currentDisplayedYear--;
+    }
+    renderCalendarGrid();
+  };
+
   function renderCalendarGrid() {
     const grid = document.getElementById("calendarDaysGrid");
-    if (!grid) return;
+    const titleEl = document.getElementById("calModalTitle");
+    if (!grid || !titleEl) return;
+    
     grid.innerHTML = "";
+    const months = ["Januar","Februar","Mart","April","Maj","Jun","Jul","Avgust","Septembar","Oktobar","Novembar","Decembar"];
+    
+    // Ubacivanje strelica za listanje meseci direktno u header modala
+    titleEl.innerHTML = `
+      <div style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:0 5px;">
+        <button class="btn btn-ghost" style="font-size:1.3rem; padding:4px 12px; font-weight:600; color:var(--text);" onclick="changeMonth(-1)">‹</button>
+        <span style="font-size:1rem; font-weight:600;">${months[currentDisplayedMonth]} ${currentDisplayedYear}</span>
+        <button class="btn btn-ghost" style="font-size:1.3rem; padding:4px 12px; font-weight:600; color:var(--text);" onclick="changeMonth(1)">›</button>
+      </div>
+    `;
 
     const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const todayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    const realTodayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
 
-    // Određivanje prvog dana u mesecu (prilagođeno da ponedeljak bude 0)
-    let firstDayIndex = new Date(year, month, 1).getDay();
-    firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+    let firstDayIndex = new Date(currentDisplayedYear, currentDisplayedMonth, 1).getDay();
+    firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1; 
 
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const daysInMonth = new Date(currentDisplayedYear, currentDisplayedMonth + 1, 0).getDate();
 
-    // Prazne ćelije za početak meseca
+    // Prazna polja
     for (let i = 0; i < firstDayIndex; i++) {
       const emptyCell = document.createElement("div");
       emptyCell.className = "cal-cell empty";
       grid.appendChild(emptyCell);
     }
 
-    // Generisanje dana
+    // Dani u mesecu koji se trenutno posmatra
     for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const dateStr = `${currentDisplayedYear}-${String(currentDisplayedMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       const isScratched = scratchedDates[dateStr] === true;
-      const isToday = dateStr === todayStr;
+      const isToday = dateStr === realTodayStr;
 
       const cell = document.createElement("div");
       cell.className = `cal-cell ${isScratched ? 'scratched' : ''} ${isToday ? 'today' : ''}`;
       cell.innerHTML = `${day}<span class="scratch-line"></span>`;
 
       cell.onclick = () => {
-        // Toggle scratch status sa animacijom
         if (scratchedDates[dateStr]) {
           delete scratchedDates[dateStr];
           cell.classList.remove("scratched");
