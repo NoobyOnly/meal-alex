@@ -967,10 +967,12 @@
         const sel = document.createElement("select");
         sel.innerHTML = `<option value="">—</option>`;
         
-        // POPRAVLJENO: Sada filtrira strogo po izabranom tipu obroka
+        // POPRAVLJENO: Sigurno poklapanje karaktera (uklanja problem sa kvačicama i poređenjem stringova)
         meals.forEach(m => {
-          const allowedTypes = m.types || [];
-          if (allowedTypes.includes(type)) {
+          const allowedTypes = m.types || [...MEAL_TYPES];
+          const hasType = allowedTypes.some(t => t.toLowerCase().trim() === type.toLowerCase().trim());
+          
+          if (hasType) {
             sel.innerHTML += `<option value="${encodeURIComponent(m.name)}">${m.name}</option>`;
           }
         });
