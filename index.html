@@ -9,174 +9,255 @@
   <meta name="theme-color" content="#18181b">
 
   <style>
-    *{
-      margin:0;
-      padding:0;
-      box-sizing:border-box;
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
 
-    body{
-      font-family:Arial, sans-serif;
-      background:#f5f5f5;
-      color:#111;
+    :root {
+      --bg: #f7f6f3;
+      --surface: #ffffff;
+      --border: #e8e4de;
+      --text: #18181b;
+      --muted: #71717a;
+      --radius: 14px;
+      --radius-sm: 9px;
+
+      --dorucak: #fef3c7;
+      --dorucak-text: #92400e;
+
+      --uzina: #ede9fe;
+      --uzina-text: #5b21b6;
+
+      --rucak: #dcfce7;
+      --rucak-text: #166534;
+
+      --vecera: #fee2e2;
+      --vecera-text: #991b1b;
     }
 
-    header{
-      background:white;
-      padding:16px;
-      border-bottom:1px solid #ddd;
-      position:sticky;
-      top:0;
-      z-index:100;
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
     }
 
-    h1{
-      font-size:22px;
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 20;
     }
 
-    nav{
-      display:flex;
-      overflow-x:auto;
-      background:white;
-      border-bottom:1px solid #ddd;
+    header h1 {
+      font-size: 1rem;
+      font-weight: bold;
     }
 
-    .tab-btn{
-      padding:14px 18px;
-      border:none;
-      background:none;
-      cursor:pointer;
-      font-size:15px;
-      white-space:nowrap;
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      overflow-x: auto;
     }
 
-    .tab-btn.active{
-      border-bottom:3px solid black;
-      font-weight:bold;
+    .tab-btn {
+      padding: 0.9rem 1rem;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      color: var(--muted);
+      white-space: nowrap;
+      font-size: 0.85rem;
     }
 
-    main{
-      padding:16px;
-      max-width:800px;
-      margin:auto;
+    .tab-btn.active {
+      color: var(--text);
+      border-bottom: 2px solid var(--text);
+      font-weight: bold;
     }
 
-    .tab{
-      display:none;
+    main {
+      padding: 1rem;
+      max-width: 720px;
+      margin: auto;
     }
 
-    .tab.active{
-      display:block;
+    .tab-content {
+      display: none;
     }
 
-    .card{
-      background:white;
-      border-radius:14px;
-      padding:16px;
-      margin-bottom:16px;
-      border:1px solid #ddd;
+    .tab-content.active {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
     }
 
-    .card-title{
-      font-size:14px;
-      margin-bottom:14px;
-      color:#666;
-      text-transform:uppercase;
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+    }
+
+    .card-title {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      display: block;
     }
 
     input,
     textarea,
-    select{
-      width:100%;
-      padding:12px;
-      border-radius:10px;
-      border:1px solid #ccc;
-      margin-bottom:10px;
-      font-size:15px;
+    select {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg);
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
     }
 
-    button{
-      padding:12px 16px;
-      border:none;
-      border-radius:10px;
-      cursor:pointer;
+    textarea {
+      min-height: 120px;
+      resize: vertical;
     }
 
-    .btn-primary{
-      background:black;
-      color:white;
+    .btn {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
     }
 
-    .meal-card{
-      border:1px solid #ddd;
-      border-radius:12px;
-      padding:12px;
-      margin-bottom:10px;
-      background:#fafafa;
+    .btn-primary {
+      background: var(--text);
+      color: white;
     }
 
-    .meal-actions{
-      margin-top:10px;
-      display:flex;
-      gap:8px;
+    .btn-danger {
+      background: #fee2e2;
+      color: #991b1b;
     }
 
-    .btn-danger{
-      background:#ffdddd;
+    .btn-edit {
+      background: #dbeafe;
+      color: #1d4ed8;
     }
 
-    .btn-edit{
-      background:#dde8ff;
+    .btn-row {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
     }
 
-    .planner-day{
-      border:1px solid #ddd;
-      border-radius:12px;
-      margin-bottom:12px;
-      overflow:hidden;
-      background:white;
+    .meal-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.9rem;
+      background: var(--bg);
+      margin-bottom: 0.7rem;
     }
 
-    .planner-header{
-      background:#f3f3f3;
-      padding:10px;
-      font-weight:bold;
+    .meal-card h3 {
+      font-size: 0.95rem;
+      margin-bottom: 0.2rem;
     }
 
-    .planner-row{
-      padding:10px;
-      border-top:1px solid #eee;
+    .price {
+      color: var(--muted);
+      font-size: 0.8rem;
     }
 
-    .shopping-item{
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:10px 0;
-      border-bottom:1px solid #eee;
+    .ingredients {
+      margin-top: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.6;
     }
 
-    .shopping-item.checked{
-      opacity:0.5;
-      text-decoration:line-through;
+    .meal-card-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.7rem;
     }
 
-    .price-box{
-      font-size:32px;
-      font-weight:bold;
+    .planner-day {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      background: white;
     }
 
-    .ingredient-card{
-      border:1px solid #ddd;
-      border-radius:12px;
-      padding:12px;
-      margin-bottom:10px;
-      background:#fafafa;
+    .planner-day-header {
+      padding: 0.7rem;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: bold;
     }
 
-    .ingredient-price{
-      color:#666;
-      margin-top:4px;
+    .planner-row {
+      padding: 0.7rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .planner-row:last-child {
+      border-bottom: none;
+    }
+
+    .meal-type-tag {
+      display: inline-block;
+      margin-bottom: 0.5rem;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      font-weight: bold;
+    }
+
+    .tag-dorucak {
+      background: var(--dorucak);
+      color: var(--dorucak-text);
+    }
+
+    .tag-uzina {
+      background: var(--uzina);
+      color: var(--uzina-text);
+    }
+
+    .tag-rucak {
+      background: var(--rucak);
+      color: var(--rucak-text);
+    }
+
+    .tag-vecera {
+      background: var(--vecera);
+      color: var(--vecera-text);
+    }
+
+    .shopping-item {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.8rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .shopping-item.checked {
+      opacity: 0.5;
+      text-decoration: line-through;
+    }
+
+    .price-big {
+      font-size: 2.2rem;
+      font-weight: bold;
     }
 
   </style>
@@ -198,24 +279,30 @@
 <main>
 
   <!-- PLAN -->
-  <div id="planTab" class="tab active">
+
+  <div id="planTab" class="tab-content active">
 
     <div class="card">
-      <div class="card-title">Nedeljni Plan</div>
+
+      <span class="card-title">
+        Nedeljni plan
+      </span>
 
       <div id="plannerBody"></div>
+
     </div>
 
   </div>
 
   <!-- MEALS -->
-  <div id="mealsTab" class="tab">
+
+  <div id="mealsTab" class="tab-content">
 
     <div class="card">
 
-      <div class="card-title">
-        Dodaj Jelo
-      </div>
+      <span class="card-title">
+        Dodaj jelo
+      </span>
 
       <input
         id="mealName"
@@ -231,19 +318,19 @@ Ovsene:80"
       ></textarea>
 
       <button
-        class="btn-primary"
+        class="btn btn-primary"
         onclick="addMeal()"
       >
-        Dodaj Jelo
+        + Dodaj jelo
       </button>
 
     </div>
 
     <div class="card">
 
-      <div class="card-title">
-        Moja Jela
-      </div>
+      <span class="card-title">
+        Moja jela
+      </span>
 
       <div id="mealsList"></div>
 
@@ -252,13 +339,14 @@ Ovsene:80"
   </div>
 
   <!-- INGREDIENTS -->
-  <div id="ingredientsTab" class="tab">
+
+  <div id="ingredientsTab" class="tab-content">
 
     <div class="card">
 
-      <div class="card-title">
-        Dodaj Namirnicu
-      </div>
+      <span class="card-title">
+        Dodaj namirnicu
+      </span>
 
       <input
         id="ingredientName"
@@ -267,7 +355,7 @@ Ovsene:80"
       >
 
       <input
-        id="ingredientAmount"
+        id="ingredientPackageAmount"
         type="number"
         placeholder="Količina pakovanja"
       >
@@ -281,23 +369,23 @@ Ovsene:80"
       <input
         id="ingredientPrice"
         type="number"
-        placeholder="Cena"
+        placeholder="Cena pakovanja"
       >
 
       <button
-        class="btn-primary"
+        class="btn btn-primary"
         onclick="addIngredient()"
       >
-        Dodaj Namirnicu
+        + Dodaj namirnicu
       </button>
 
     </div>
 
     <div class="card">
 
-      <div class="card-title">
-        Moje Namirnice
-      </div>
+      <span class="card-title">
+        Moje namirnice
+      </span>
 
       <div id="ingredientsList"></div>
 
@@ -306,16 +394,17 @@ Ovsene:80"
   </div>
 
   <!-- SHOPPING -->
-  <div id="shoppingTab" class="tab">
+
+  <div id="shoppingTab" class="tab-content">
 
     <div class="card">
 
-      <div class="card-title">
-        Ukupan Trošak
-      </div>
+      <span class="card-title">
+        Ukupan trošak
+      </span>
 
       <div
-        class="price-box"
+        class="price-big"
         id="weeklyTotal"
       >
         0 RSD
@@ -325,9 +414,9 @@ Ovsene:80"
 
     <div class="card">
 
-      <div class="card-title">
-        Lista Kupovine
-      </div>
+      <span class="card-title">
+        Lista kupovine
+      </span>
 
       <div id="shoppingList"></div>
 
@@ -351,9 +440,17 @@ Ovsene:80"
 
   const MEAL_TYPES = [
     "Doručak",
+    "Užina",
     "Ručak",
     "Večera"
   ];
+
+  const TYPE_TAGS = {
+    "Doručak": "tag-dorucak",
+    "Užina": "tag-uzina",
+    "Ručak": "tag-rucak",
+    "Večera": "tag-vecera"
+  };
 
   let meals = JSON.parse(
     localStorage.getItem("meals")
@@ -369,10 +466,10 @@ Ovsene:80"
 
   // TABS
 
-  function showTab(id, btn){
+  function showTab(id, btn) {
 
     document
-      .querySelectorAll(".tab")
+      .querySelectorAll(".tab-content")
       .forEach(t => t.classList.remove("active"));
 
     document
@@ -385,14 +482,14 @@ Ovsene:80"
 
     btn.classList.add("active");
 
-    if(id === "shoppingTab"){
+    if (id === "shoppingTab") {
       generateShopping();
     }
   }
 
   // SAVE
 
-  function saveData(){
+  function saveData() {
 
     localStorage.setItem(
       "meals",
@@ -412,7 +509,7 @@ Ovsene:80"
 
   // PARSE INGREDIENTS
 
-  function parseIngredients(text){
+  function parseIngredients(text) {
 
     return text
       .split("\n")
@@ -429,130 +526,9 @@ Ovsene:80"
       .filter(i => i.name);
   }
 
-  // ADD INGREDIENT
+  // CALCULATE PRICE
 
-  function addIngredient(){
-
-    const name =
-      document.getElementById("ingredientName").value;
-
-    const packageAmount =
-      Number(
-        document.getElementById("ingredientAmount").value
-      );
-
-    const unit =
-      document.getElementById("ingredientUnit").value;
-
-    const price =
-      Number(
-        document.getElementById("ingredientPrice").value
-      );
-
-    if(!name) return;
-
-    ingredientsDB.push({
-      name,
-      packageAmount,
-      unit,
-      price
-    });
-
-    saveData();
-
-    renderIngredients();
-
-    document.getElementById("ingredientName").value = "";
-    document.getElementById("ingredientAmount").value = "";
-    document.getElementById("ingredientUnit").value = "";
-    document.getElementById("ingredientPrice").value = "";
-  }
-
-  // RENDER INGREDIENTS
-
-  function renderIngredients(){
-
-    const list =
-      document.getElementById("ingredientsList");
-
-    list.innerHTML = "";
-
-    ingredientsDB.forEach((i, idx) => {
-
-      const div =
-        document.createElement("div");
-
-      div.className =
-        "ingredient-card";
-
-      div.innerHTML = `
-        <strong>${i.name}</strong>
-
-        <div class="ingredient-price">
-          ${i.packageAmount}${i.unit}
-          •
-          ${i.price} RSD
-        </div>
-
-        <div class="meal-actions">
-
-          <button
-            class="btn-danger"
-            onclick="deleteIngredient(${idx})"
-          >
-            Obriši
-          </button>
-
-        </div>
-      `;
-
-      list.appendChild(div);
-    });
-  }
-
-  function deleteIngredient(idx){
-
-    ingredientsDB.splice(idx, 1);
-
-    saveData();
-
-    renderIngredients();
-  }
-
-  // ADD MEAL
-
-  function addMeal(){
-
-    const name =
-      document.getElementById("mealName").value;
-
-    const ingredients =
-      parseIngredients(
-        document.getElementById(
-          "mealIngredients"
-        ).value
-      );
-
-    if(!name) return;
-
-    meals.push({
-      name,
-      ingredients
-    });
-
-    saveData();
-
-    renderMeals();
-
-    renderPlanner();
-
-    document.getElementById("mealName").value = "";
-    document.getElementById("mealIngredients").value = "";
-  }
-
-  // CALCULATE MEAL PRICE
-
-  function calculateMealPrice(meal){
+  function calculateMealPrice(meal) {
 
     let total = 0;
 
@@ -565,7 +541,7 @@ Ovsene:80"
             i.name.toLowerCase()
         );
 
-      if(!dbItem) return;
+      if (!dbItem) return;
 
       const itemPrice =
         (dbItem.price / dbItem.packageAmount)
@@ -577,12 +553,195 @@ Ovsene:80"
     return Math.round(total);
   }
 
-  // RENDER MEALS
+  // ADD INGREDIENT
 
-  function renderMeals(){
+  function addIngredient() {
+
+    const name =
+      document.getElementById(
+        "ingredientName"
+      ).value.trim();
+
+    const packageAmount =
+      Number(
+        document.getElementById(
+          "ingredientPackageAmount"
+        ).value
+      );
+
+    const unit =
+      document.getElementById(
+        "ingredientUnit"
+      ).value.trim();
+
+    const price =
+      Number(
+        document.getElementById(
+          "ingredientPrice"
+        ).value
+      );
+
+    if (!name) return;
+
+    ingredientsDB.push({
+      name,
+      packageAmount,
+      unit,
+      price
+    });
+
+    saveData();
+
+    renderIngredients();
+
+    document.getElementById(
+      "ingredientName"
+    ).value = "";
+
+    document.getElementById(
+      "ingredientPackageAmount"
+    ).value = "";
+
+    document.getElementById(
+      "ingredientUnit"
+    ).value = "";
+
+    document.getElementById(
+      "ingredientPrice"
+    ).value = "";
+  }
+
+  // DELETE INGREDIENT
+
+  function deleteIngredient(idx) {
+
+    ingredientsDB.splice(idx, 1);
+
+    saveData();
+
+    renderIngredients();
+  }
+
+  // RENDER INGREDIENTS
+
+  function renderIngredients() {
 
     const list =
-      document.getElementById("mealsList");
+      document.getElementById(
+        "ingredientsList"
+      );
+
+    list.innerHTML = "";
+
+    ingredientsDB.forEach((item, idx) => {
+
+      const div =
+        document.createElement("div");
+
+      div.className = "meal-card";
+
+      div.innerHTML = `
+        <h3>
+          ${item.name}
+        </h3>
+
+        <div class="price">
+          ${item.packageAmount}${item.unit}
+          •
+          ${item.price} RSD
+        </div>
+
+        <div class="meal-card-actions">
+
+          <button
+            class="btn btn-danger"
+            onclick="deleteIngredient(${idx})"
+          >
+            Obriši
+          </button>
+
+        </div>
+      `;
+
+      list.appendChild(div);
+    });
+  }
+
+  // ADD MEAL
+
+  function addMeal() {
+
+    const name =
+      document.getElementById(
+        "mealName"
+      ).value.trim();
+
+    const ingredients =
+      parseIngredients(
+        document.getElementById(
+          "mealIngredients"
+        ).value
+      );
+
+    if (!name) return;
+
+    meals.push({
+      name,
+      ingredients
+    });
+
+    saveData();
+
+    renderMeals();
+
+    renderPlanner();
+
+    document.getElementById(
+      "mealName"
+    ).value = "";
+
+    document.getElementById(
+      "mealIngredients"
+    ).value = "";
+  }
+
+  // DELETE MEAL
+
+  function deleteMeal(idx) {
+
+    const name = meals[idx].name;
+
+    meals.splice(idx, 1);
+
+    DAYS.forEach(day => {
+
+      MEAL_TYPES.forEach(type => {
+
+        if (
+          weeklyPlan[day]?.[type] === name
+        ) {
+          weeklyPlan[day][type] = "";
+        }
+
+      });
+
+    });
+
+    saveData();
+
+    renderMeals();
+
+    renderPlanner();
+  }
+
+  // RENDER MEALS
+
+  function renderMeals() {
+
+    const list =
+      document.getElementById(
+        "mealsList"
+      );
 
     list.innerHTML = "";
 
@@ -591,28 +750,29 @@ Ovsene:80"
       const div =
         document.createElement("div");
 
-      div.className =
-        "meal-card";
+      div.className = "meal-card";
 
       div.innerHTML = `
-        <strong>
+        <h3>
           ${meal.name}
-        </strong>
+        </h3>
 
-        <div style="margin-top:5px;color:#666">
+        <div class="price">
           ${calculateMealPrice(meal)} RSD
         </div>
 
-        <div style="margin-top:10px;font-size:14px;color:#666">
+        <div class="ingredients">
+
           ${meal.ingredients.map(i => `
             ${i.name} - ${i.amount}
           `).join("<br>")}
+
         </div>
 
-        <div class="meal-actions">
+        <div class="meal-card-actions">
 
           <button
-            class="btn-danger"
+            class="btn btn-danger"
             onclick="deleteMeal(${idx})"
           >
             Obriši
@@ -625,50 +785,27 @@ Ovsene:80"
     });
   }
 
-  function deleteMeal(idx){
+  // RENDER PLANNER
 
-    const name = meals[idx].name;
-
-    meals.splice(idx, 1);
-
-    DAYS.forEach(day => {
-
-      MEAL_TYPES.forEach(type => {
-
-        if(
-          weeklyPlan[day]?.[type] === name
-        ){
-          weeklyPlan[day][type] = "";
-        }
-      });
-    });
-
-    saveData();
-
-    renderMeals();
-
-    renderPlanner();
-  }
-
-  // PLANNER
-
-  function renderPlanner(){
+  function renderPlanner() {
 
     const body =
-      document.getElementById("plannerBody");
+      document.getElementById(
+        "plannerBody"
+      );
 
     body.innerHTML = "";
 
     DAYS.forEach(day => {
 
-      const div =
+      const wrap =
         document.createElement("div");
 
-      div.className =
+      wrap.className =
         "planner-day";
 
-      div.innerHTML = `
-        <div class="planner-header">
+      wrap.innerHTML = `
+        <div class="planner-day-header">
           ${day}
         </div>
       `;
@@ -680,6 +817,14 @@ Ovsene:80"
 
         row.className =
           "planner-row";
+
+        const tag =
+          document.createElement("span");
+
+        tag.className =
+          `meal-type-tag ${TYPE_TAGS[type]}`;
+
+        tag.textContent = type;
 
         const select =
           document.createElement("select");
@@ -697,7 +842,7 @@ Ovsene:80"
 
         select.onchange = e => {
 
-          if(!weeklyPlan[day]){
+          if (!weeklyPlan[day]) {
             weeklyPlan[day] = {};
           }
 
@@ -707,24 +852,19 @@ Ovsene:80"
           saveData();
         };
 
-        row.innerHTML = `
-          <div style="margin-bottom:5px">
-            ${type}
-          </div>
-        `;
-
+        row.appendChild(tag);
         row.appendChild(select);
 
-        div.appendChild(row);
+        wrap.appendChild(row);
       });
 
-      body.appendChild(div);
+      body.appendChild(wrap);
     });
   }
 
   // SHOPPING
 
-  function generateShopping(){
+  function generateShopping() {
 
     let total = 0;
 
@@ -737,22 +877,25 @@ Ovsene:80"
         const mealName =
           weeklyPlan[day]?.[type];
 
-        if(!mealName) return;
+        if (!mealName) return;
 
         const meal =
-          meals.find(m => m.name === mealName);
+          meals.find(
+            m => m.name === mealName
+          );
 
-        if(!meal) return;
+        if (!meal) return;
 
-        total += calculateMealPrice(meal);
+        total +=
+          calculateMealPrice(meal);
 
         meal.ingredients.forEach(i => {
 
-          if(!shoppingMap[i.name]){
+          if (!shoppingMap[i.name]) {
             shoppingMap[i.name] = 0;
           }
 
-          shoppingMap[i.name] += i.amount;
+          shoppingMap[i.name] += Number(i.amount);
         });
       });
     });
@@ -763,7 +906,9 @@ Ovsene:80"
       `${Math.round(total)} RSD`;
 
     const list =
-      document.getElementById("shoppingList");
+      document.getElementById(
+        "shoppingList"
+      );
 
     list.innerHTML = "";
 
@@ -772,8 +917,8 @@ Ovsene:80"
 
         const dbItem =
           ingredientsDB.find(
-            i =>
-              i.name.toLowerCase() ===
+            d =>
+              d.name.toLowerCase() ===
               name.toLowerCase()
           );
 
@@ -790,10 +935,15 @@ Ovsene:80"
           <input type="checkbox">
 
           <div>
-            <strong>${name}</strong>
+
+            <strong>
+              ${name}
+            </strong>
+
             <div>
               ${amount}${unit}
             </div>
+
           </div>
         `;
 
