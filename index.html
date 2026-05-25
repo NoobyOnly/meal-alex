@@ -8,8 +8,8 @@
   <meta name="theme-color" content="#18181b">
   <link rel="apple-touch-icon" href="icon.svg">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-web-app-capable" content="yes">
+  <meta name="apple-web-app-status-bar-style" content="black">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -148,7 +148,6 @@
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loadingScreen">
   <div class="spinner"></div>
   <p>Učitavanje...</p>
@@ -177,7 +176,6 @@
 
 <main>
 
-  <!-- PLAN TAB -->
   <div id="planTab" class="tab-content active">
     <div class="card" style="padding:1rem">
       <div class="section-header">
@@ -188,7 +186,6 @@
     </div>
   </div>
 
-  <!-- MEALS TAB -->
   <div id="mealsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Dodaj jelo</span>
@@ -212,7 +209,6 @@
     </div>
   </div>
 
-  <!-- PANTRY (ŠPAJZ) TAB -->
   <div id="pantryTab" class="tab-content">
     <div class="card">
       <span class="card-title">Dodaj u špajz / zalihe</span>
@@ -234,7 +230,6 @@
     </div>
   </div>
 
-  <!-- SHOPPING TAB -->
   <div id="shoppingTab" class="tab-content">
     <div class="card">
       <span class="card-title">Generiši listu (Uzima u obzir špajz)</span>
@@ -256,7 +251,6 @@
     </div>
   </div>
 
-  <!-- STATS TAB -->
   <div id="statsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Pregled</span>
@@ -295,7 +289,6 @@
   </div>
 </div>
 
-<!-- Firebase Realtime App Script -->
 <script type="module">
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(e => console.log(e));
 
@@ -320,7 +313,7 @@
 
   let meals      = [];
   let weeklyPlan = {};
-  let pantry     = []; // { name: "...", amount: "..." }
+  let pantry     = []; 
   let editingMealIndex = null;
   let saveTimeout = null;
 
@@ -346,6 +339,15 @@
         setSyncStatus("error");
       }
     }, 600);
+  }
+
+  // ── RENDER ALL INTERFACES ────────────────────────────────
+  function renderAll() {
+    renderPlanner();
+    window.renderMealsList();
+    window.renderPantryList();
+    window.generateShopping();
+    updateStats();
   }
 
   // ── LOAD FROM FIRESTORE (Realtime Listener) ──────────────
@@ -476,7 +478,6 @@
 
     if (!name) return;
 
-    // Ako namirnica vec postoji, spoji ih ili azuriraj
     const existingIndex = pantry.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
     if (existingIndex > -1) {
       pantry[existingIndex].amount = amount;
@@ -529,6 +530,7 @@
   window.renderMealsList = function() {
     const query     = document.getElementById("mealSearch").value.toLowerCase();
     const container = document.getElementById("mealsList");
+    if (!container) return;
     const filtered  = meals.filter(m => m.name.toLowerCase().includes(query));
     document.getElementById("mealCountBadge").textContent = meals.length;
 
@@ -585,6 +587,7 @@
           if (!weeklyPlan[day]) weeklyPlan[day] = {};
           weeklyPlan[day][type] = decodeURIComponent(e.target.value);
           saveData();
+          updateStats();
         };
         
         row.appendChild(tag);
@@ -600,6 +603,7 @@
     weeklyPlan = {};
     saveData();
     renderPlanner();
+    updateStats();
   };
 
   // ── GENERATE SHOPPING LIST ────────────────────────────────
@@ -607,7 +611,6 @@
     let total = 0;
     const shoppingMap = {};
     
-    // Racunanje opsega dana
     let daysToProcess = DAYS;
     if (daysLimit) {
       const todayIdx = (new Date().getDay() || 7) - 1; 
@@ -617,7 +620,6 @@
       }
     }
 
-    // Prolazak kroz dane i sakupljanje namirnica iz jela
     DAYS.forEach(day => {
       MEAL_TYPES.forEach(type => {
         const mealName = weeklyPlan[day]?.[type];
@@ -635,7 +637,6 @@
       });
     });
 
-    // PAMETNA LOGIKA: Ukrštanje sakupljenih namirnica sa stanjem u špajzu
     pantry.forEach(pantryItem => {
       const matchKey = Object.keys(shoppingMap).find(k => k.toLowerCase() === pantryItem.name.toLowerCase());
       if (matchKey) {
@@ -644,8 +645,11 @@
       }
     });
 
-    document.getElementById("weeklyTotal").textContent = `${total} RSD`;
+    const weeklyTotalEl = document.getElementById("weeklyTotal");
+    if(weeklyTotalEl) weeklyTotalEl.textContent = `${total} RSD`;
+    
     const list = document.getElementById("shoppingList");
+    if (!list) return;
     const entries = Object.entries(shoppingMap);
 
     if (entries.length === 0) {
@@ -658,7 +662,6 @@
     let itemIdx = 0;
 
     entries.forEach(([name, data]) => {
-      // Ako namirnica postoji u špajzu, označavamo je ili preskačemo
       const cleanId = `item_${itemIdx++}`;
       const amountsDisplay = data.amounts.length > 0 ? data.amounts.join(" + ") : "po potrebi";
       
@@ -668,7 +671,6 @@
       
       if (data.inPantry) {
         pantryBadgeHtml = `<span class="pantry-notice">Imate u špajzu (${data.pantryAmount})</span>`;
-        // Automatski čekiraj ako već imaš u špajzu
         isChecked = "checked";
         checkedClass = "checked";
       }
@@ -695,53 +697,56 @@
   };
 
   function updateUncheckedCount() {
+    const container = document.getElementById("uncheckedCount");
+    if(!container) return;
     const all     = document.querySelectorAll("#shoppingList .shopping-item").length;
     const checked = document.querySelectorAll("#shoppingList .shopping-item.checked").length;
-    document.getElementById("uncheckedCount").textContent = `${all - checked} / ${all} stavki`;
+    container.textContent = `${all - checked} / ${all} stavki`;
   }
 
   // ── STATS ────────────────────────────────────────────────
   function updateStats() {
-    document.getElementById("statMealCount").textContent = meals.length;
-    if (meals.length === 0) {
-      document.getElementById("statAvgPrice").textContent   = "0 RSD";
-      document.getElementById("statWeekTotal").textContent  = "0 RSD";
-      return;
-    }
-    const total = meals.reduce((s, m) => s + m.price, 0);
-    document.getElementById("statAvgPrice").textContent = `${Math.round(total / meals.length)} RSD`;
-    
-    let weekTotal = 0;
+    let totalMealsPrice = 0;
+    meals.forEach(m => totalMealsPrice += (m.price || 0));
+    const avgPrice = meals.length ? Math.round(totalMealsPrice / meals.length) : 0;
+
+    let currentWeekTotal = 0;
     DAYS.forEach(day => {
       MEAL_TYPES.forEach(type => {
-        const meal = meals.find(m => m.name === weeklyPlan[day]?.[type]);
-        if (meal) weekTotal += meal.price;
+        const mName = weeklyPlan[day]?.[type];
+        if (mName) {
+          const meal = meals.find(m => m.name === mName);
+          if (meal) currentWeekTotal += (meal.price || 0);
+        }
       });
     });
-    document.getElementById("statWeekTotal").textContent = `${weekTotal} RSD`;
+
+    const mCountEl = document.getElementById("statMealCount");
+    const avgPriceEl = document.getElementById("statAvgPrice");
+    const wTotalEl = document.getElementById("statWeekTotal");
+
+    if (mCountEl) mCountEl.textContent = meals.length;
+    if (avgPriceEl) avgPriceEl.textContent = `${avgPrice} RSD`;
+    if (wTotalEl) wTotalEl.textContent = `${currentWeekTotal} RSD`;
   }
 
-  // ── WEEK LABEL ───────────────────────────────────────────
-  function setWeekLabel() {
+  // ── DYNAMIC WEEK LABELLING ────────────────────────────────
+  function initWeekLabel() {
+    const label = document.getElementById("weekLabel");
+    if (!label) return;
     const now = new Date();
-    const mon = new Date(now);
-    mon.setDate(now.getDate() - (now.getDay() || 7) + 1);
-    const sun = new Date(mon);
-    sun.setDate(mon.getDate() + 6);
-    const fmt = d => d.toLocaleDateString("sr", { day:"numeric", month:"short" });
-    document.getElementById("weekLabel").textContent = `${fmt(mon)} – ${fmt(sun)}`;
-  }
-
-  function renderAll() {
-    window.renderMealsList();
-    window.renderPantryList();
-    renderPlanner();
-    updateStats();
+    const start = new Date(now.getFullYear(), 0, 1);
+    const diff = now - start + (start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000;
+    const oneDay = 1000 * 60 * 60 * 24;
+    const dayOfYear = Math.floor(diff / oneDay);
+    const weekNum = Math.ceil((dayOfYear + start.getDay() + 1) / 7);
+    label.textContent = `NEDELJA ${weekNum}, ${now.getFullYear()}`;
   }
 
   // ── INITIALIZATION ───────────────────────────────────────
-  setWeekLabel();
+  initWeekLabel();
   initRealtimeSync();
+
 </script>
 </body>
 </html>
