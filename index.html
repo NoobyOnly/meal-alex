@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Meal Planner</title>
+  <title>Aleksandra Ivković</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#18181b">
   <link rel="apple-touch-icon" href="icon.svg">
@@ -195,7 +195,7 @@
     <div class="logo-dot">
       <svg viewBox="0 0 16 16"><path d="M2 3h12v2H2zM2 7h8v2H2zM2 11h10v2H2z"/></svg>
     </div>
-    <h1>Meal Planner</h1>
+    <h1>Aleksandra Ivković</h1>
   </div>
   <div style="display:flex;align-items:center;gap:0.75rem">
     <span class="sync-label"><span class="sync-dot" id="syncDot"></span><span id="syncText">—</span></span>
@@ -216,7 +216,6 @@
 
 <main id="swipeArea">
 
-  <!-- PLAN TAB -->
   <div id="planTab" class="tab-content active">
     <div class="card" style="padding:1rem">
       <div class="section-header">
@@ -227,7 +226,6 @@
     </div>
   </div>
 
-  <!-- MEALS TAB -->
   <div id="mealsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Dodaj jelo</span>
@@ -250,7 +248,6 @@
     </div>
   </div>
 
-  <!-- PANTRY TAB -->
   <div id="pantryTab" class="tab-content">
     <div class="card">
       <span class="card-title">Dodaj u špajz / bazu namirnica</span>
@@ -273,7 +270,6 @@
     </div>
   </div>
 
-  <!-- SHOPPING TAB -->
   <div id="shoppingTab" class="tab-content">
     <div class="card">
       <span class="card-title">Generiši listu (Uzima u obzir špajz)</span>
@@ -303,7 +299,6 @@
     </div>
   </div>
 
-  <!-- CENA TAB -->
   <div id="statsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Finansijski pregled</span>
@@ -326,14 +321,12 @@
 
 </main>
 
-<!-- LEBDEĆE DUGME ZA TRACKING (KALENDAR FAB) -->
 <div class="fab-cal" onclick="openCalendarModal()" title="Otvori kalendar praćenja">
   <svg viewBox="0 0 24 24">
     <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
   </svg>
 </div>
 
-<!-- JEDINSTVENI MODAL ZA IZMENU JELA I ŠPAJZA -->
 <div class="modal-overlay" id="editModal" onclick="handleModalClick(event)">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -364,12 +357,10 @@
   </div>
 </div>
 
-<!-- MODAL: KALENDAR ZA TRACKING SA NAVIGACIJOM MESECA -->
 <div class="modal-overlay" id="calendarModal" onclick="handleCalendarModalClick(event)">
   <div class="modal" style="max-width: 420px;">
     <div class="modal-handle"></div>
     
-    <!-- Kontejner za naslov i strelice -->
     <h2 id="calModalTitle" style="margin-bottom: 0.25rem;"></h2>
     <p style="text-align:center; font-size:0.75rem; color:var(--muted); margin-bottom:1rem;">Tapni na dan da ga izgrebeš/poništiš</p>
     
@@ -976,7 +967,7 @@
       MEAL_TYPES.forEach(type => {
         const mealName = weeklyPlan[day]?.[type];
         if (!mealName) return;
-        const meal = meals.find(m => m.name === mealName);
+        const meal = meals.find(m => m.name === mName);
         if (!meal) return;
 
         if (!daysLimit || daysToProcess.includes(day)) {
