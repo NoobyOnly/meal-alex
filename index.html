@@ -309,17 +309,31 @@
 
 </main>
 
+<!-- JEDINSTVENI MODAL ZA IZMENU JELA I ŠPAJZA -->
 <div class="modal-overlay" id="editModal" onclick="handleModalClick(event)">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h2>Izmeni jelo</h2>
-    <div class="form-stack">
+    <h2 id="modalTitle">Izmeni jelo</h2>
+    
+    <!-- Polja za Jelo -->
+    <div class="form-stack" id="modalMealFields">
       <input id="editMealName" type="text" placeholder="Naziv jela">
       <textarea id="editMealIngredients"></textarea>
     </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeEditModal()">Otkaži</button>
-      <button class="btn btn-primary" onclick="saveMealEdit()">Sačuvaj</button>
+
+    <!-- Polja za Špajz -->
+    <div class="form-stack" id="modalPantryFields" style="display:none">
+      <input id="editPantryName" type="text" placeholder="Naziv namirnice">
+      <input id="editPantryAmount" type="text" placeholder="Količina pakovanja">
+      <input id="editPantryPrice" type="number" placeholder="Cena (RSD)" inputmode="numeric">
+    </div>
+
+    <div class="modal-footer" style="justify-content: space-between; align-items:center; width:100%;">
+      <button class="btn btn-danger" id="modalDeleteBtn" onclick="handleModalDelete()">Izbriši trajno</button>
+      <div style="display:flex; gap:0.6rem;">
+        <button class="btn" onclick="closeEditModal()">Otkaži</button>
+        <button class="btn btn-primary" onclick="saveModalEdit()">Sačuvaj</button>
+      </div>
     </div>
   </div>
 </div>
@@ -351,8 +365,10 @@
   let meals      = [];
   let weeklyPlan = {};
   let pantry     = [];
-  let localShoppingState = {}; // Kešira lokalno stanje šta je štiklirano u toku kupovine
-  let editingMealIndex = null;
+  let localShoppingState = {};
+  
+  let editingMode = null; // "meal" ili "pantry"
+  let editingIndex = null;
   let saveTimeout = null;
 
   function setSyncStatus(state) {
@@ -502,56 +518,104 @@
     nameEl.focus();
   };
 
-  window.deleteMeal = function(idx) {
-    meals.splice(idx, 1);
-    DAYS.forEach(day => {
-      MEAL_TYPES.forEach(type => {
-        if (!weeklyPlan[day]) return;
-        const currentSelected = weeklyPlan[day][type];
-        if (meals.findIndex(m => m.name === currentSelected) === -1) {
-             weeklyPlan[day][type] = "";
-        }
-      });
-    });
-    saveData();
-    renderAll();
-  };
-
+  // ── MODAL ZA EDITOVANJE JELA ILI NAMIRNICA ──
   window.editMeal = function(idx) {
-    editingMealIndex = idx;
+    editingMode = "meal";
+    editingIndex = idx;
+    
+    document.getElementById("modalTitle").textContent = "Izmeni jelo";
+    document.getElementById("modalMealFields").style.display = "flex";
+    document.getElementById("modalPantryFields").style.display = "none";
+    
     const meal = meals[idx];
     document.getElementById("editMealName").value = meal.name;
     document.getElementById("editMealIngredients").value =
       meal.ingredients.map(i => `${i.name}:${i.amount}`).join("\n");
+      
+    document.getElementById("editModal").classList.add("open");
+  };
+
+  window.editPantryItem = function(idx) {
+    editingMode = "pantry";
+    editingIndex = idx;
+
+    document.getElementById("modalTitle").textContent = "Izmeni namirnicu";
+    document.getElementById("modalMealFields").style.display = "none";
+    document.getElementById("modalPantryFields").style.display = "flex";
+
+    const item = pantry[idx];
+    document.getElementById("editPantryName").value = item.name;
+    document.getElementById("editPantryAmount").value = item.amount;
+    document.getElementById("editPantryPrice").value = item.price;
+
     document.getElementById("editModal").classList.add("open");
   };
 
   window.closeEditModal = function() {
     document.getElementById("editModal").classList.remove("open");
-    editingMealIndex = null;
+    editingIndex = null;
+    editingMode = null;
   };
 
   window.handleModalClick = function(e) {
     if (e.target === document.getElementById("editModal")) window.closeEditModal();
   };
 
-  window.saveMealEdit = function() {
-    if (editingMealIndex === null) return;
-    const oldName = meals[editingMealIndex].name;
-    const newName = document.getElementById("editMealName").value.trim();
-    
-    meals[editingMealIndex] = {
-      name: newName || oldName,
-      ingredients: parseIngredients(document.getElementById("editMealIngredients").value)
-    };
+  window.saveModalEdit = function() {
+    if (editingIndex === null) return;
 
-    if (newName && newName !== oldName) {
+    if (editingMode === "meal") {
+      const oldName = meals[editingIndex].name;
+      const newName = document.getElementById("editMealName").value.trim();
+      
+      meals[editingIndex] = {
+        name: newName || oldName,
+        ingredients: parseIngredients(document.getElementById("editMealIngredients").value)
+      };
+
+      if (newName && newName !== oldName) {
+        DAYS.forEach(day => {
+          MEAL_TYPES.forEach(type => {
+            if (weeklyPlan[day]?.[type] === oldName) weeklyPlan[day][type] = newName;
+          });
+        });
+      }
+    } 
+    else if (editingMode === "pantry") {
+      const newName = document.getElementById("editPantryName").value.trim();
+      const newAmount = document.getElementById("editPantryAmount").value.trim();
+      const newPrice = Number(document.getElementById("editPantryPrice").value) || 0;
+
+      if (!newName) return;
+      pantry[editingIndex].name = newName;
+      pantry[editingIndex].amount = newAmount || "1kom";
+      pantry[editingIndex].price = newPrice;
+    }
+
+    saveData();
+    renderAll();
+    window.closeEditModal();
+  };
+
+  window.handleModalDelete = function() {
+    if (editingIndex === null) return;
+    
+    if (editingMode === "meal") {
+      if (!confirm("Da li sigurno želiš da obrišeš ovo jelo?")) return;
+      const oldName = meals[editingIndex].name;
+      meals.splice(editingIndex, 1);
+      
       DAYS.forEach(day => {
         MEAL_TYPES.forEach(type => {
-          if (weeklyPlan[day]?.[type] === oldName) weeklyPlan[day][type] = newName;
+          if (weeklyPlan[day]?.[type] === oldName) weeklyPlan[day][type] = "";
         });
       });
+    } 
+    else if (editingMode === "pantry") {
+      if (!confirm("Da li sigurno želiš da izbrišeš ovu namirnicu iz baze?")) return;
+      pantry.splice(editingIndex, 1);
     }
+
     saveData();
     renderAll();
     window.closeEditModal();
@@ -583,12 +647,6 @@
     amountEl.value = "";
     priceEl.value = "";
     nameEl.focus();
-  };
-
-  window.deletePantryItem = function(idx) {
-    pantry.splice(idx, 1);
-    saveData();
-    renderAll();
   };
 
   window.togglePantryStock = function(idx, checked) {
@@ -624,13 +682,12 @@
             <span class="price" style="font-size:0.78rem; color:var(--text); background:var(--surface); padding:1px 6px; border-radius:4px; border:1px solid var(--border);">${item.price} RSD</span>
           </div>
         </div>
-        <div class="modal-handle" style="display:none"></div>
         <div class="meal-card-actions">
           <label class="pantry-status-check ${activeClass}">
             <input type="checkbox" ${isChecked} onchange="togglePantryStock(${idx}, this.checked)">
             Imam
           </label>
-          <button class="btn btn-danger" onclick="deletePantryItem(${idx})" style="padding: 5px 9px;">✕</button>
+          <button class="btn btn-edit" onclick="editPantryItem(${idx})">Edit</button>
         </div>`;
       container.appendChild(div);
     });
@@ -663,7 +720,6 @@
         </div>
         <div class="meal-card-actions">
           <button class="btn btn-edit" onclick="editMeal(${realIdx})">Edit</button>
-          <button class="btn btn-danger" onclick="deleteMeal(${realIdx})">✕</button>
         </div>`;
       container.appendChild(div);
     });
@@ -786,7 +842,6 @@
       let isChecked = "";
       let checkedClass = "";
       
-      // Proveravamo da li je već štiklirano u bazi ili u lokalnom sesijskom kešu kupovine
       if (data.inPantryAndStocked || localShoppingState[name.toLowerCase()] === true) {
         pantryBadgeHtml = `<span class="pantry-notice">Imaš na stanju</span>`;
         isChecked = "checked";
@@ -807,7 +862,6 @@
     updateUncheckedCount();
   };
 
-  // ── NOVA INTEGRISANA LOGIKA ZA PREBACIVANJE U ŠPAJZ DIREKTNO NA KLIK ──
   window.toggleShoppingItem = function(cb, id) {
     const li = document.getElementById(`si-${id}`);
     if(!li) return;
@@ -819,17 +873,14 @@
       li.classList.add("checked");
       localShoppingState[name.toLowerCase()] = true;
 
-      // Tražimo artikal u špajzu
       const pantryIdx = pantry.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
       if (pantryIdx > -1) {
-        // Ako postoji, odmah ga stavi na stanje
         pantry[pantryIdx].inStock = true;
       } else {
-        // Ako ne postoji, napravi ga automatski u bazi sa unetom količinom
         pantry.push({
           name: name,
           amount: amountDisplay,
-          price: 0, // Korisnik naknadno može dodati cenu u tabu Špajz
+          price: 0,
           inStock: true
         });
       }
@@ -843,12 +894,10 @@
       }
     }
 
-    // Tiho i brzo čuvamo stanje u Firebase-u bez kompletnog prerendera ekrana u sekundi klika
     saveData();
     updateUncheckedCount();
   };
 
-  // ── NOVA FUNKCIJA: KRAJ KUPOVINE (Čišćenje kupljenih artikala iz plana) ──
   window.finishShopping = function() {
     const checkedItems = document.querySelectorAll("#shoppingList .shopping-item.checked");
     if(checkedItems.length === 0) {
@@ -857,7 +906,6 @@
     }
 
     if(confirm(`Završavaš kupovinu? Sve štiklirane namirnice ostaju bezbedno sačuvane u Špajzu kao 'Ima na stanju'.`)) {
-      // Brišemo privremeni keš jer je sve trajno upisano u špajz bazu
       localShoppingState = {};
       saveData();
       renderAll();
@@ -979,7 +1027,6 @@
     }
   }
 
-  // ── INICIJALIZACIJA ───────────────────────────────────────
   initHeaderLabels();
   initRealtimeSync();
   initSwipeNavigation();
