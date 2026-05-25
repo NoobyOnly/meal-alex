@@ -2,7 +2,7 @@
 <html lang="sr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Meal Planner</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#18181b">
@@ -29,7 +29,7 @@
       --vecera:  #fee2e2; --vecera-text:  #991b1b;
     }
 
-    body { font-family: 'Geist', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 2rem; }
+    body { font-family: 'Geist', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 2rem; overflow-x: hidden; }
 
     header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 20; }
     .header-left { display: flex; align-items: center; gap: 10px; }
@@ -46,12 +46,12 @@
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
     .sync-label { font-size: 0.68rem; color: var(--muted); display: flex; align-items: center; }
 
-    nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 1rem; }
+    nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 1rem; position: sticky; top: 61px; z-index: 19; }
     nav::-webkit-scrollbar { display: none; }
     .tab-btn { flex-shrink: 0; padding: 0.75rem 1rem; border: none; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 400; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
     .tab-btn.active { color: var(--text); font-weight: 600; border-bottom-color: var(--text); }
 
-    main { padding: 1.25rem; max-width: 680px; margin: 0 auto; }
+    main { padding: 1.25rem; max-width: 680px; margin: 0 auto; min-height: calc(100vh - 120px); }
     .tab-content { display: none; }
     .tab-content.active { display: flex; flex-direction: column; gap: 1rem; }
 
@@ -165,15 +165,15 @@
   </div>
 </header>
 
-<nav>
-  <button class="tab-btn active" onclick="showTab('planTab', this)">Plan</button>
-  <button class="tab-btn" onclick="showTab('mealsTab', this)">Jela</button>
-  <button class="tab-btn" onclick="showTab('pantryTab', this)">Špajz</button>
-  <button class="tab-btn" onclick="showTab('shoppingTab', this)">Kupovina</button>
-  <button class="tab-btn" onclick="showTab('statsTab', this)">Cena</button>
+<nav id="topNav">
+  <button class="tab-btn active" data-target="planTab" onclick="showTab('planTab', this)">Plan</button>
+  <button class="tab-btn" data-target="mealsTab" onclick="showTab('mealsTab', this)">Jela</button>
+  <button class="tab-btn" data-target="pantryTab" onclick="showTab('pantryTab', this)">Špajz</button>
+  <button class="tab-btn" data-target="shoppingTab" onclick="showTab('shoppingTab', this)">Kupovina</button>
+  <button class="tab-btn" data-target="statsTab" onclick="showTab('statsTab', this)">Cena</button>
 </nav>
 
-<main>
+<main id="swipeArea">
 
   <!-- PLAN TAB -->
   <div id="planTab" class="tab-content active">
@@ -192,7 +192,6 @@
       <span class="card-title">Dodaj jelo</span>
       <div class="form-stack">
         <input id="mealName" type="text" placeholder="Naziv jela">
-        <!-- Izbačen input za fiksnu cenu jela -->
         <textarea id="mealIngredients" placeholder="Sastojci (jedan po liniji):&#10;Pirinač:100g&#10;Mleko:200ml&#10;Jaja:3kom"></textarea>
         <button class="btn btn-primary btn-full" onclick="addMeal()">+ Dodaj jelo</button>
       </div>
@@ -255,7 +254,7 @@
     </div>
   </div>
 
-  <!-- CENA (BIVŠA STATISTIKA) TAB -->
+  <!-- CENA TAB -->
   <div id="statsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Finansijski pregled</span>
@@ -284,7 +283,6 @@
     <h2>Izmeni jelo</h2>
     <div class="form-stack">
       <input id="editMealName" type="text" placeholder="Naziv jela">
-      <!-- Izbačena fiksna cena iz modala -->
       <textarea id="editMealIngredients"></textarea>
     </div>
     <div class="modal-footer">
@@ -317,13 +315,15 @@
   const MEAL_TYPES = ["Doručak","Užina","Ručak","Večera"];
   const TYPE_TAGS  = { "Doručak":"tag-dorucak","Užina":"tag-uzina","Ručak":"tag-rucak","Večera":"tag-vecera" };
 
+  // Redosled tabova za detekciju swipe-a
+  const TAB_ORDER  = ["planTab", "mealsTab", "pantryTab", "shoppingTab", "statsTab"];
+
   let meals      = [];
   let weeklyPlan = {};
-  let pantry     = []; // { name, amount, price }
+  let pantry     = [];
   let editingMealIndex = null;
   let saveTimeout = null;
 
-  // ── SYNC STATUS ──────────────────────────────────────────
   function setSyncStatus(state) {
     const dot  = document.getElementById("syncDot");
     const text = document.getElementById("syncText");
@@ -332,7 +332,6 @@
     text.textContent = state === "syncing" ? "Čuvanje..." : state === "synced" ? "Sačuvano" : "Greška";
   }
 
-  // ── SAVE TO FIRESTORE ────────────────────────────────────
   async function saveData() {
     clearTimeout(saveTimeout);
     saveTimeout = setTimeout(async () => {
@@ -347,7 +346,6 @@
     }, 600);
   }
 
-  // ── RENDER ALL INTERFACES ────────────────────────────────
   function renderAll() {
     renderPlanner();
     window.renderMealsList();
@@ -356,7 +354,6 @@
     updateStats();
   }
 
-  // ── LOAD FROM FIRESTORE (Realtime Listener) ──────────────
   function initRealtimeSync() {
     onSnapshot(doc(db, "planner", "data"), (snap) => {
       if (snap.exists()) {
@@ -376,18 +373,29 @@
     });
   }
 
-  // ── TABS ─────────────────────────────────────────────────
+  // Izmenjena showTab funkcija da automatski centrira dugme u top nav baru na mobilnom
   window.showTab = function(id, btn) {
     document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    
     document.getElementById(id).classList.add("active");
-    if (btn) btn.classList.add("active");
+    
+    let activeBtn = btn;
+    if (!activeBtn) {
+      activeBtn = document.querySelector(`[data-target="${id}"]`);
+    }
+    
+    if (activeBtn) {
+      activeBtn.classList.add("active");
+      // Autoscroll tab menija ako je van vidokruga
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+    
     if (id === "statsTab")    updateStats();
     if (id === "pantryTab")   window.renderPantryList();
     if (id === "shoppingTab") window.generateShopping();
   };
 
-  // ── HELPERS: PAMETNO RAČUNANJE CENE SASTOJAKA ─────────────
   function parseIngredients(text) {
     if (!text) return [];
     return text.split("\n").map(line => {
@@ -396,13 +404,11 @@
     }).filter(i => i.name);
   }
 
-  // Izvlači samo broj iz stringa (npr "200ml" -> 200, "1l" -> 1)
   function parseNumberFromString(str) {
     const num = parseFloat(str.replace(/[^0-9.]/g, ''));
     return isNaN(num) ? 1 : num;
   }
 
-  // Glavna matematika za cenu parcijalnog sastojka
   function calculateIngredientPrice(ingName, ingAmountStr) {
     const pItem = pantry.find(p => p.name.toLowerCase() === ingName.toLowerCase());
     if (!pItem || !pItem.price) return 0;
@@ -410,18 +416,17 @@
     let reqAmount = parseNumberFromString(ingAmountStr);
     let totalAmount = parseNumberFromString(pItem.amount);
 
-    // Automatska konverzija iz Litar u Mililitar i Kilogram u Gram
     let reqStr = ingAmountStr.toLowerCase();
     let totStr = pItem.amount.toLowerCase();
 
     if (reqStr.includes('ml') && (totStr.includes('l') && !totStr.includes('ml'))) {
-      totalAmount = totalAmount * 1000; // 1L -> 1000ml
+      totalAmount = totalAmount * 1000;
     } else if ((reqStr.includes('l') && !reqStr.includes('ml')) && totStr.includes('ml')) {
       reqAmount = reqAmount * 1000;
     }
 
     if (reqStr.includes('g') && !reqStr.includes('kg') && totStr.includes('kg')) {
-      totalAmount = totalAmount * 1000; // 1kg -> 1000g
+      totalAmount = totalAmount * 1000;
     } else if (reqStr.includes('kg') && totStr.includes('g') && !totStr.includes('kg')) {
       reqAmount = reqAmount * 1000;
     }
@@ -429,7 +434,6 @@
     return (pItem.price / totalAmount) * reqAmount;
   }
 
-  // Računa ukupnu cenu celog jela na osnovu baze iz špajza
   function getMealPrice(meal) {
     let totalPrice = 0;
     if (!meal.ingredients) return 0;
@@ -439,16 +443,14 @@
     return Math.round(totalPrice);
   }
 
-  // ── ADD MEAL ─────────────────────────────────────────────
   window.addMeal = function() {
     const nameEl = document.getElementById("mealName");
     const ingEl = document.getElementById("mealIngredients");
-
     const name  = nameEl.value.trim();
     const ingredients = parseIngredients(ingEl.value);
 
     if (!name) return;
-    meals.push({ name, ingredients }); // Cena se više ne čuva direktno
+    meals.push({ name, ingredients });
     
     saveData();
     renderAll();
@@ -458,7 +460,6 @@
     nameEl.focus();
   };
 
-  // ── DELETE MEAL ──────────────────────────────────────────
   window.deleteMeal = function(idx) {
     const name = meals[idx].name;
     meals.splice(idx, 1);
@@ -471,7 +472,6 @@
     renderAll();
   };
 
-  // ── EDIT MEAL ────────────────────────────────────────────
   window.editMeal = function(idx) {
     editingMealIndex = idx;
     const meal = meals[idx];
@@ -512,7 +512,6 @@
     window.closeEditModal();
   };
 
-  // ── PANTRY (ŠPAJZ) LOGIC ─────────────────────────────────
   window.addPantryItem = function() {
     const nameEl = document.getElementById("pantryItemName");
     const amountEl = document.getElementById("pantryItemAmount");
@@ -577,7 +576,6 @@
     });
   };
 
-  // ── RENDER MEALS LIST ────────────────────────────────────
   window.renderMealsList = function() {
     const query     = document.getElementById("mealSearch").value.toLowerCase();
     const container = document.getElementById("mealsList");
@@ -592,7 +590,7 @@
     container.innerHTML = "";
     filtered.forEach(meal => {
       const realIdx = meals.indexOf(meal);
-      const calculatedPrice = getMealPrice(meal); // Dinamički računa cenu za prikaz
+      const calculatedPrice = getMealPrice(meal);
       const div = document.createElement("div");
       div.className = "meal-card";
       div.innerHTML = `
@@ -609,7 +607,6 @@
     });
   }
 
-  // ── RENDER PLANNER ───────────────────────────────────────
   function renderPlanner() {
     const body = document.getElementById("plannerBody");
     if(!body) return;
@@ -658,7 +655,6 @@
     updateStats();
   };
 
-  // ── GENERATE SHOPPING LIST ────────────────────────────────
   window.generateShopping = function(daysLimit = null) {
     let total = 0;
     const shoppingMap = {};
@@ -680,7 +676,7 @@
         if (!meal) return;
 
         if (!daysLimit || daysToProcess.includes(day)) {
-          total += getMealPrice(meal); // Koristi dinamičku cenu jela
+          total += getMealPrice(meal);
           meal.ingredients.forEach(i => {
             if (!shoppingMap[i.name]) shoppingMap[i.name] = { amounts: [], inPantry: false, pantryAmount: "" };
             if (i.amount) shoppingMap[i.name].amounts.push(i.amount);
@@ -756,7 +752,6 @@
     container.textContent = `${all - checked} / ${all} stavki`;
   }
 
-  // ── CENA TAB LOGIC (STARI STATS) ───────────────────────────
   function updateStats() {
     let totalMealsPrice = 0;
     meals.forEach(m => totalMealsPrice += getMealPrice(m));
@@ -782,7 +777,6 @@
     if (wTotalEl) wTotalEl.textContent = `${currentWeekTotal} RSD`;
   }
 
-  // ── DYNAMIC WEEK LABELLING ────────────────────────────────
   function initWeekLabel() {
     const label = document.getElementById("weekLabel");
     if (!label) return;
@@ -795,9 +789,66 @@
     label.textContent = `NEDELJA ${weekNum}, ${now.getFullYear()}`;
   }
 
-  // ── INITIALIZATION ───────────────────────────────────────
+  // ── DETEKCIJA I LOGIKA ZA SWIPE POKRETE ────────────────────
+  function initSwipeNavigation() {
+    const swipeArea = document.getElementById("swipeArea");
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    swipeArea.addEventListener('touchstart', (e) => {
+      // Ignorišemo swipe ako se dodir desi unutar tekstualnog polja, textaree ili modala da ne kvari unos podataka
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal')) {
+        return;
+      }
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    swipeArea.addEventListener('touchend', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal')) {
+        return;
+      }
+      touchEndX = e.changedTouches[0].screenX;
+      touchEndY = e.changedTouches[0].screenY;
+      handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+      const diffX = touchEndX - touchStartX;
+      const diffY = touchEndY - touchStartY;
+
+      // Uslov: Pokret mora biti primarno horizontalan i duži od 70 piksela
+      if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 70) {
+        // Pronađi trenutno aktivni tab
+        const currentActiveContent = document.querySelector(".tab-content.active");
+        if (!currentActiveContent) return;
+        
+        const currentTabId = currentActiveContent.id;
+        const currentIndex = TAB_ORDER.indexOf(currentTabId);
+        
+        if (diffX > 0) {
+          // Swipe udesno -> Idi na PRETHODNI tab
+          if (currentIndex > 0) {
+            const prevTabId = TAB_ORDER[currentIndex - 1];
+            window.showTab(prevTabId);
+          }
+        } else {
+          // Swipe ulevo -> Idi na SLEDEĆI tab
+          if (currentIndex < TAB_ORDER.length - 1) {
+            const nextTabId = TAB_ORDER[currentIndex + 1];
+            window.showTab(nextTabId);
+          }
+        }
+      }
+    }
+  }
+
+  // ── INICIJALIZACIJA ───────────────────────────────────────
   initWeekLabel();
   initRealtimeSync();
+  initSwipeNavigation();
 
 </script>
 </body>
