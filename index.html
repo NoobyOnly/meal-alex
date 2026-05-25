@@ -53,7 +53,7 @@
 
     main { padding: 1.25rem; max-width: 680px; margin: 0 auto; min-height: calc(100vh - 120px); position: relative; }
     
-    /* ── NOVE KLASE ZA ANIMACIJU TABOVA ────────────────────── */
+    /* ANIMACIJA TABOVA */
     .tab-content { display: none; opacity: 0; width: 100%; }
     .tab-content.active { 
       display: flex; 
@@ -62,14 +62,8 @@
       opacity: 1;
     }
 
-    /* Klasa za ulazak s desne strane (kad idemo napred) */
-    .slide-in-right {
-      animation: slideInRight 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    }
-    /* Klasa za ulazak s leve strane (kad idemo nazad) */
-    .slide-in-left {
-      animation: slideInLeft 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-    }
+    .slide-in-right { animation: slideInRight 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
+    .slide-in-left { animation: slideInLeft 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 
     @keyframes slideInRight {
       from { transform: translateX(30px); opacity: 0; }
@@ -79,7 +73,6 @@
       from { transform: translateX(-30px); opacity: 0; }
       to { transform: translateX(0); opacity: 1; }
     }
-    /* ──────────────────────────────────────────────────────── */
 
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
     .card-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; display: block; }
@@ -226,7 +219,7 @@
       </div>
       <div class="search-input-wrap">
         <span class="search-icon">⌕</span>
-        <input id="mealSearch" type="text" placeholder="Pretraži..." oninput="renderMealsList()">
+        <input id="mealSearch" type="text" placeholder="Pretraži po nazivu...">
       </div>
       <div class="meals-list" id="mealsList"></div>
     </div>
@@ -390,16 +383,14 @@
     });
   }
 
-  // Modifikovana showTab funkcija koja podržava smer animacije
   window.showTab = function(id, btn, forceDirection = null) {
     const currentActiveContent = document.querySelector(".tab-content.active");
-    let directionClass = "slide-in-right"; // Default smer
+    let directionClass = "slide-in-right";
 
     if (currentActiveContent) {
       const oldIdx = TAB_ORDER.indexOf(currentActiveContent.id);
       const newIdx = TAB_ORDER.indexOf(id);
       
-      // Određujemo smer na osnovu pozicije tabova u nizu
       if (forceDirection) {
         directionClass = forceDirection;
       } else if (newIdx < oldIdx) {
@@ -407,13 +398,11 @@
       }
     }
 
-    // Ukloni aktivno stanje i prethodne klase animacija sa svih tabova
     document.querySelectorAll(".tab-content").forEach(t => {
       t.classList.remove("active", "slide-in-right", "slide-in-left");
     });
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     
-    // Aktiviraj novi tab i dodaj mu animaciju
     const newTabTarget = document.getElementById(id);
     newTabTarget.classList.add("active", directionClass);
     
@@ -493,11 +482,14 @@
   };
 
   window.deleteMeal = function(idx) {
-    const name = meals[idx].name;
     meals.splice(idx, 1);
     DAYS.forEach(day => {
       MEAL_TYPES.forEach(type => {
-        if (weeklyPlan[day]?.[type] === name) weeklyPlan[day][type] = "";
+        if (!weeklyPlan[day]) return;
+        const currentSelected = weeklyPlan[day][type];
+        if (meals.findIndex(m => m.name === currentSelected) === -1) {
+             weeklyPlan[day][type] = "";
+        }
       });
     });
     saveData();
@@ -608,15 +600,18 @@
     });
   };
 
+  // ── POPRAVLJENA I VEZANA FUNKCIJA ZA PRETRAGU JELA ───────
   window.renderMealsList = function() {
-    const query     = document.getElementById("mealSearch").value.toLowerCase();
+    const searchInput = document.getElementById("mealSearch");
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
     const container = document.getElementById("mealsList");
     if (!container) return;
-    const filtered  = meals.filter(m => m.name.toLowerCase().includes(query));
+    
+    const filtered = meals.filter(m => m.name.toLowerCase().includes(query));
     document.getElementById("mealCountBadge").textContent = meals.length;
 
     if (filtered.length === 0) {
-      container.innerHTML = `<div class="empty-state">${meals.length === 0 ? "Nema jela.<br>Dodaj prvo jelo iznad." : "Nema rezultata."}</div>`;
+      container.innerHTML = `<div class="empty-state">${meals.length === 0 ? "Nema jela.<br>Dodaj prvo jelo iznad." : "Nema rezultata za pretragu."}</div>`;
       return;
     }
     container.innerHTML = "";
@@ -637,7 +632,7 @@
         </div>`;
       container.appendChild(div);
     });
-  }
+  };
 
   function renderPlanner() {
     const body = document.getElementById("plannerBody");
@@ -859,13 +854,11 @@
         if (diffX > 0) {
           if (currentIndex > 0) {
             const prevTabId = TAB_ORDER[currentIndex - 1];
-            // Slanje "slide-in-left" smera jer se vraćamo nazad
             window.showTab(prevTabId, null, "slide-in-left");
           }
         } else {
           if (currentIndex < TAB_ORDER.length - 1) {
             const nextTabId = TAB_ORDER[currentIndex + 1];
-            // Slanje "slide-in-right" smera jer idemo napred
             window.showTab(nextTabId, null, "slide-in-right");
           }
         }
@@ -873,10 +866,19 @@
     }
   }
 
+  // ── VEZIVANJE EVENT LISTENERA ZA SEARCH POLJE ────────────
+  function initSearchEventListener() {
+    const searchInput = document.getElementById("mealSearch");
+    if (searchInput) {
+      searchInput.addEventListener("input", window.renderMealsList);
+    }
+  }
+
   // ── INICIJALIZACIJA ───────────────────────────────────────
   initWeekLabel();
   initRealtimeSync();
   initSwipeNavigation();
+  initSearchEventListener();
 
 </script>
 </body>
