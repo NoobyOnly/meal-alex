@@ -271,7 +271,13 @@
     <div class="card">
       <div class="section-header">
         <span class="card-title">Lista za kupovinu</span>
-        <button class="btn btn-ghost" id="finishShoppingBtn" onclick="finishShopping()" style="display:none; color: #16a34a; font-weight:600;">✓ Završi kupovinu</button>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <!-- NOVO DUGME ZA DELJENJE LISTE -->
+          <button class="btn btn-ghost" id="shareShoppingBtn" onclick="shareShoppingList()" style="display:none; color: var(--text); font-weight:500;">
+            <span style="font-size:1.1rem; line-height:1;">⎋</span> Podeli listu
+          </button>
+          <button class="btn btn-ghost" id="finishShoppingBtn" onclick="finishShopping()" style="display:none; color: #16a34a; font-weight:600;">✓ Završi</button>
+        </div>
       </div>
       <ul id="shoppingList" style="list-style:none"></ul>
     </div>
@@ -662,7 +668,6 @@
     window.renderPantryList();
   };
 
-  // BRZA PROMENA KOLIČINE U ŠPAJZU DIREKTNO NA KARTICI
   window.changePantryQty = function(idx, change) {
     const item = pantry[idx];
     const maxQty = parseNumberFromString(item.amount);
@@ -849,15 +854,18 @@
     const entries = Object.entries(shoppingMap);
 
     const finishBtn = document.getElementById("finishShoppingBtn");
+    const shareBtn = document.getElementById("shareShoppingBtn");
 
     if (entries.length === 0) {
       list.innerHTML = `<div class="empty-state">Nema planiranih obroka za izabrani period.<br>Popuni plan pa generiši listu.</div>`;
       document.getElementById("uncheckedCount").textContent = "0 / 0 stavki";
       if(finishBtn) finishBtn.style.display = "none";
+      if(shareBtn) shareBtn.style.display = "none";
       return;
     }
 
     if(finishBtn) finishBtn.style.display = "inline-block";
+    if(shareBtn) shareBtn.style.display = "inline-block";
 
     let finalHtml = "";
     let itemIdx = 0;
@@ -927,6 +935,43 @@
 
     saveData();
     updateUncheckedCount();
+  };
+
+  // NOVA FUNKCIJA ZA DELJENJE LISTE PREKO SMS / VIBER-A
+  window.shareShoppingList = function() {
+    const items = document.querySelectorAll("#shoppingList .shopping-item");
+    let textMessage = "🛒 LISTA ZA KUPOVINU:\n\n";
+    let count = 0;
+
+    items.forEach(li => {
+      // Uzimamo samo stavke koje NISU označene (nisu precrtane)
+      if (!li.classList.contains("checked")) {
+        const name = decodeURIComponent(li.getAttribute("data-name"));
+        const amount = decodeURIComponent(li.getAttribute("data-amount"));
+        textMessage += `☐ ${name} (${amount})\n`;
+        count++;
+      }
+    });
+
+    if (count === 0) {
+      alert("Sve stavke su već kupljene (štiklirane)!");
+      return;
+    }
+
+    // Provera da li telefon podržava sistemski Share API (radi na telefonima preko HTTPS-a)
+    if (navigator.share) {
+      navigator.share({
+        title: 'Lista za kupovinu',
+        text: textMessage
+      }).catch(err => console.log("Greška prilikom deljenja:", err));
+    } else {
+      // Ako pretraživač ne podržava Share API, kopira tekst u clipboard i obaveštava korisnika
+      navigator.clipboard.writeText(textMessage).then(() => {
+        alert("Lista je kopirana u privremenu memoriju (Clipboard)! Sada je možeš samo nalepiti (Paste) u Viber ili SMS.");
+      }).catch(err => {
+        alert("Neuspešno kopiranje. Poruka glasi:\n\n" + textMessage);
+      });
+    }
   };
 
   window.finishShopping = function() {
