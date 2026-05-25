@@ -747,7 +747,7 @@
         tag.className = `meal-type-tag ${TYPE_TAGS[type]}`;
         tag.textContent = type;
         const sel = document.createElement("select");
-        const filtered = meals.filter(m => !m.category || m.category === type);
+        const filtered = meals.filter(m => m.category === type);
         sel.innerHTML = `<option value="">—</option>` + filtered.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
         sel.value = weeklyPlan[day]?.[type] || "";
         sel.onchange = e => {
