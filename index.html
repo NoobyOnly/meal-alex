@@ -36,7 +36,10 @@
     .logo-dot { width: 28px; height: 28px; background: var(--text); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
     .logo-dot svg { width: 16px; height: 16px; fill: white; }
     header h1 { font-size: 1rem; font-weight: 600; letter-spacing: -0.02em; }
+    
+    .info-pills { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
     .week-pill { font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--muted); background: var(--bg); border: 1px solid var(--border); padding: 4px 10px; border-radius: 100px; white-space: nowrap; }
+    .date-pill { font-size: 0.68rem; color: var(--muted); font-weight: 500; }
 
     /* SYNC STATUS */
     .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #d1d5db; display: inline-block; margin-right: 4px; transition: background 0.3s; }
@@ -105,7 +108,6 @@
     .meal-card .ingredients { font-size: 0.75rem; color: var(--muted); margin-top: 5px; line-height: 1.7; }
     .meal-card-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 
-    /* STYLING ZA NOVI PANTRY CHECKBOX */
     .pantry-status-check { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 500; color: var(--muted); cursor: pointer; background: var(--surface); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); user-select: none; }
     .pantry-status-check input { width: 14px; height: 14px; cursor: pointer; accent-color: #16a34a; margin: 0; padding: 0; }
     .pantry-status-check.has-stock { border-color: #bbf7d0; color: #15803d; background: #f0fdf4; }
@@ -170,6 +172,7 @@
 </head>
 <body>
 
+<!-- Loading -->
 <div id="loadingScreen">
   <div class="spinner"></div>
   <p>Učitavanje...</p>
@@ -184,7 +187,10 @@
   </div>
   <div style="display:flex;align-items:center;gap:0.75rem">
     <span class="sync-label"><span class="sync-dot" id="syncDot"></span><span id="syncText">—</span></span>
-    <span class="week-pill" id="weekLabel"></span>
+    <div class="info-pills">
+      <span class="week-pill" id="weekLabel"></span>
+      <span class="date-pill" id="dateLabel"></span>
+    </div>
   </div>
 </header>
 
@@ -198,6 +204,7 @@
 
 <main id="swipeArea">
 
+  <!-- PLAN TAB -->
   <div id="planTab" class="tab-content active">
     <div class="card" style="padding:1rem">
       <div class="section-header">
@@ -208,6 +215,7 @@
     </div>
   </div>
 
+  <!-- MEALS TAB -->
   <div id="mealsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Dodaj jelo</span>
@@ -230,6 +238,7 @@
     </div>
   </div>
 
+  <!-- PANTRY TAB -->
   <div id="pantryTab" class="tab-content">
     <div class="card">
       <span class="card-title">Dodaj u špajz / bazu namirnica</span>
@@ -252,6 +261,7 @@
     </div>
   </div>
 
+  <!-- SHOPPING TAB -->
   <div id="shoppingTab" class="tab-content">
     <div class="card">
       <span class="card-title">Generiši listu (Uzima u obzir špajz)</span>
@@ -273,6 +283,7 @@
     </div>
   </div>
 
+  <!-- CENA TAB -->
   <div id="statsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Finansijski pregled</span>
@@ -310,6 +321,7 @@
   </div>
 </div>
 
+<!-- Firebase Realtime App Script -->
 <script type="module">
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(e => console.log(e));
 
@@ -556,9 +568,7 @@
     if (existingIndex > -1) {
       pantry[existingIndex].amount = amount;
       pantry[existingIndex].price = price;
-      // Zadržavamo staro stanje prekidača ako namirnica već postoji
     } else {
-      // Podrazumevano je FALSE (nemamo na stanju) kada se tek unese cena
       pantry.push({ name, amount, price, inStock: false });
     }
 
@@ -577,11 +587,9 @@
     renderAll();
   };
 
-  // Funkcija koja menja stanje prekidača u špajzu (Imam / Nemam)
   window.togglePantryStock = function(idx, checked) {
     pantry[idx].inStock = checked;
     saveData();
-    // Odmah osvežava i listu za kupovinu u pozadini
     window.generateShopping();
     window.renderPantryList();
   };
@@ -734,7 +742,6 @@
       });
     });
 
-    // Proveravamo da li je namirnica uneta u špajz I da li je eksplicitno čekirana kao "Imam"
     pantry.forEach(pantryItem => {
       const matchKey = Object.keys(shoppingMap).find(k => k.toLowerCase() === pantryItem.name.toLowerCase());
       if (matchKey) {
@@ -769,7 +776,6 @@
       let isChecked = "";
       let checkedClass = "";
       
-      // Ako je označeno "Imam" u špajzu, automatski se prekriži na listi za kupovinu
       if (data.inPantryAndStocked) {
         pantryBadgeHtml = `<span class="pantry-notice">Imaš na stanju (${data.pantryAmount})</span>`;
         isChecked = "checked";
@@ -826,20 +832,36 @@
     const wTotalEl = document.getElementById("statWeekTotal");
 
     if (mCountEl) mCountEl.textContent = meals.length;
-    if (activeBtn => avgPriceEl) avgPriceEl.textContent = `${avgPrice} RSD`;
+    if (avgPriceEl) avgPriceEl.textContent = `${avgPrice} RSD`;
     if (wTotalEl) wTotalEl.textContent = `${currentWeekTotal} RSD`;
   }
 
-  function initWeekLabel() {
-    const label = document.getElementById("weekLabel");
-    if (!label) return;
+  // ISPRAVLJENA LOGIKA ZA NUMERISANJE NEDELJA I DODAT DATUM
+  function initHeaderLabels() {
+    const weekLabel = document.getElementById("weekLabel");
+    const dateLabel = document.getElementById("dateLabel");
+    if (!weekLabel || !dateLabel) return;
+
     const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 1);
-    const diff = now - start + (start.getTimezoneOffset() - now.getTimezoneOffset()) * 60 * 1000;
-    const oneDay = 1000 * 60 * 60 * 24;
-    const dayOfYear = Math.floor(diff / oneDay);
-    const weekNum = Math.ceil((dayOfYear + start.getDay() + 1) / 7);
-    label.textContent = `NEDELJA ${weekNum}, ${now.getFullYear()}`;
+    
+    // Formatiranje današnjeg datuma (npr. 25.05.2026.)
+    const dan = String(now.getDate()).padStart(2, '0');
+    const mesec = String(now.getMonth() + 1).padStart(2, '0');
+    const godina = now.getFullYear();
+    dateLabel.textContent = `${dan}.${mesec}.${godina}.`;
+
+    // Standardni ISO-8601 algoritam za računanje broja nedelje (Ponedeljak je prvi dan)
+    const target = new Date(now.valueOf());
+    const dayNr = (now.getDay() + 6) % 7;
+    target.setDate(target.getDate() - dayNr + 3);
+    const firstThursday = target.valueOf();
+    target.setMonth(0, 1);
+    if (target.getDay() !== 4) {
+      target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
+    }
+    const weekNum = 1 + Math.ceil((firstThursday - target) / 604800000);
+    
+    weekLabel.textContent = `NEDELJA ${weekNum}, ${godina}`;
   }
 
   function initSwipeNavigation() {
@@ -900,7 +922,7 @@
   }
 
   // ── INICIJALIZACIJA ───────────────────────────────────────
-  initWeekLabel();
+  initHeaderLabels();
   initRealtimeSync();
   initSwipeNavigation();
   initSearchEventListener();
