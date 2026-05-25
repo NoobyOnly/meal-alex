@@ -51,9 +51,35 @@
     .tab-btn { flex-shrink: 0; padding: 0.75rem 1rem; border: none; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 400; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
     .tab-btn.active { color: var(--text); font-weight: 600; border-bottom-color: var(--text); }
 
-    main { padding: 1.25rem; max-width: 680px; margin: 0 auto; min-height: calc(100vh - 120px); }
-    .tab-content { display: none; }
-    .tab-content.active { display: flex; flex-direction: column; gap: 1rem; }
+    main { padding: 1.25rem; max-width: 680px; margin: 0 auto; min-height: calc(100vh - 120px); position: relative; }
+    
+    /* ── NOVE KLASE ZA ANIMACIJU TABOVA ────────────────────── */
+    .tab-content { display: none; opacity: 0; width: 100%; }
+    .tab-content.active { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 1rem;
+      opacity: 1;
+    }
+
+    /* Klasa za ulazak s desne strane (kad idemo napred) */
+    .slide-in-right {
+      animation: slideInRight 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+    /* Klasa za ulazak s leve strane (kad idemo nazad) */
+    .slide-in-left {
+      animation: slideInLeft 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    @keyframes slideInRight {
+      from { transform: translateX(30px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { transform: translateX(-30px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+    /* ──────────────────────────────────────────────────────── */
 
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
     .card-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; display: block; }
@@ -146,7 +172,6 @@
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loadingScreen">
   <div class="spinner"></div>
   <p>Učitavanje...</p>
@@ -175,7 +200,6 @@
 
 <main id="swipeArea">
 
-  <!-- PLAN TAB -->
   <div id="planTab" class="tab-content active">
     <div class="card" style="padding:1rem">
       <div class="section-header">
@@ -186,7 +210,6 @@
     </div>
   </div>
 
-  <!-- MEALS TAB -->
   <div id="mealsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Dodaj jelo</span>
@@ -209,7 +232,6 @@
     </div>
   </div>
 
-  <!-- PANTRY (ŠPAJZ) TAB -->
   <div id="pantryTab" class="tab-content">
     <div class="card">
       <span class="card-title">Dodaj u špajz / bazu namirnica</span>
@@ -232,7 +254,6 @@
     </div>
   </div>
 
-  <!-- SHOPPING TAB -->
   <div id="shoppingTab" class="tab-content">
     <div class="card">
       <span class="card-title">Generiši listu (Uzima u obzir špajz)</span>
@@ -254,7 +275,6 @@
     </div>
   </div>
 
-  <!-- CENA TAB -->
   <div id="statsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Finansijski pregled</span>
@@ -292,7 +312,6 @@
   </div>
 </div>
 
-<!-- Firebase Realtime App Script -->
 <script type="module">
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(e => console.log(e));
 
@@ -314,8 +333,6 @@
   const DAYS       = ["Ponedeljak","Utorak","Sreda","Četvrtak","Petak","Subota","Nedelja"];
   const MEAL_TYPES = ["Doručak","Užina","Ručak","Večera"];
   const TYPE_TAGS  = { "Doručak":"tag-dorucak","Užina":"tag-uzina","Ručak":"tag-rucak","Večera":"tag-vecera" };
-
-  // Redosled tabova za detekciju swipe-a
   const TAB_ORDER  = ["planTab", "mealsTab", "pantryTab", "shoppingTab", "statsTab"];
 
   let meals      = [];
@@ -373,21 +390,36 @@
     });
   }
 
-  // Izmenjena showTab funkcija da automatski centrira dugme u top nav baru na mobilnom
-  window.showTab = function(id, btn) {
-    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+  // Modifikovana showTab funkcija koja podržava smer animacije
+  window.showTab = function(id, btn, forceDirection = null) {
+    const currentActiveContent = document.querySelector(".tab-content.active");
+    let directionClass = "slide-in-right"; // Default smer
+
+    if (currentActiveContent) {
+      const oldIdx = TAB_ORDER.indexOf(currentActiveContent.id);
+      const newIdx = TAB_ORDER.indexOf(id);
+      
+      // Određujemo smer na osnovu pozicije tabova u nizu
+      if (forceDirection) {
+        directionClass = forceDirection;
+      } else if (newIdx < oldIdx) {
+        directionClass = "slide-in-left";
+      }
+    }
+
+    // Ukloni aktivno stanje i prethodne klase animacija sa svih tabova
+    document.querySelectorAll(".tab-content").forEach(t => {
+      t.classList.remove("active", "slide-in-right", "slide-in-left");
+    });
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
     
-    document.getElementById(id).classList.add("active");
+    // Aktiviraj novi tab i dodaj mu animaciju
+    const newTabTarget = document.getElementById(id);
+    newTabTarget.classList.add("active", directionClass);
     
-    let activeBtn = btn;
-    if (!activeBtn) {
-      activeBtn = document.querySelector(`[data-target="${id}"]`);
-    }
-    
+    let activeBtn = btn || document.querySelector(`[data-target="${id}"]`);
     if (activeBtn) {
       activeBtn.classList.add("active");
-      // Autoscroll tab menija ako je van vidokruga
       activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
     
@@ -789,7 +821,6 @@
     label.textContent = `NEDELJA ${weekNum}, ${now.getFullYear()}`;
   }
 
-  // ── DETEKCIJA I LOGIKA ZA SWIPE POKRETE ────────────────────
   function initSwipeNavigation() {
     const swipeArea = document.getElementById("swipeArea");
     let touchStartX = 0;
@@ -798,7 +829,6 @@
     let touchEndY = 0;
 
     swipeArea.addEventListener('touchstart', (e) => {
-      // Ignorišemo swipe ako se dodir desi unutar tekstualnog polja, textaree ili modala da ne kvari unos podataka
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal')) {
         return;
       }
@@ -819,9 +849,7 @@
       const diffX = touchEndX - touchStartX;
       const diffY = touchEndY - touchStartY;
 
-      // Uslov: Pokret mora biti primarno horizontalan i duži od 70 piksela
       if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 70) {
-        // Pronađi trenutno aktivni tab
         const currentActiveContent = document.querySelector(".tab-content.active");
         if (!currentActiveContent) return;
         
@@ -829,16 +857,16 @@
         const currentIndex = TAB_ORDER.indexOf(currentTabId);
         
         if (diffX > 0) {
-          // Swipe udesno -> Idi na PRETHODNI tab
           if (currentIndex > 0) {
             const prevTabId = TAB_ORDER[currentIndex - 1];
-            window.showTab(prevTabId);
+            // Slanje "slide-in-left" smera jer se vraćamo nazad
+            window.showTab(prevTabId, null, "slide-in-left");
           }
         } else {
-          // Swipe ulevo -> Idi na SLEDEĆI tab
           if (currentIndex < TAB_ORDER.length - 1) {
             const nextTabId = TAB_ORDER[currentIndex + 1];
-            window.showTab(nextTabId);
+            // Slanje "slide-in-right" smera jer idemo napred
+            window.showTab(nextTabId, null, "slide-in-right");
           }
         }
       }
