@@ -72,7 +72,6 @@
     textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
     .form-stack { display: flex; flex-direction: column; gap: 0.65rem; }
 
-    /* Stilovi za izbor tipa obroka */
     .meal-type-selector { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin: 0.25rem 0; }
     .type-checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; background: var(--bg); padding: 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border); cursor: pointer; user-select: none; font-weight: 500; }
     .type-checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--text); cursor: pointer; }
@@ -573,7 +572,6 @@
     const name  = nameEl.value.trim();
     const ingredients = parseIngredients(ingEl.value);
 
-    // Kupljenje izabranih tipova obroka
     const allowedTypes = [];
     if (document.getElementById("addTypeDorucak").checked) allowedTypes.push("Doručak");
     if (document.getElementById("addTypeUzina").checked) allowedTypes.push("Užina");
@@ -585,13 +583,12 @@
     meals.push({ 
       name, 
       ingredients,
-      types: allowedTypes.length > 0 ? allowedTypes : [...MEAL_TYPES] // ako ništa ne čekira, po defaultu može svuda
+      types: allowedTypes.length > 0 ? allowedTypes : [...MEAL_TYPES] 
     });
     
     saveData();
     renderAll();
 
-    // Reset forme
     nameEl.value = "";
     ingEl.value = "";
     document.getElementById("addTypeDorucak").checked = false;
@@ -614,7 +611,6 @@
     document.getElementById("editMealIngredients").value =
       meal.ingredients.map(i => `${i.name}:${i.amount}`).join("\n");
       
-    // Postavljanje checkbox-ova u modalu na osnovu sačuvanih tipova obroka
     const mealTypes = meal.types || [...MEAL_TYPES];
     document.getElementById("editTypeDorucak").checked = mealTypes.includes("Doručak");
     document.getElementById("editTypeUzina").checked = mealTypes.includes("Užina");
@@ -971,9 +967,9 @@
         const sel = document.createElement("select");
         sel.innerHTML = `<option value="">—</option>`;
         
-        // PAMETNI FILTER: Ovde prikazujemo samo jela koja u sebi sadrže trenutni tip obroka (npr. samo Doručak)
+        // POPRAVLJENO: Sada filtrira strogo po izabranom tipu obroka
         meals.forEach(m => {
-          const allowedTypes = m.types || [...MEAL_TYPES];
+          const allowedTypes = m.types || [];
           if (allowedTypes.includes(type)) {
             sel.innerHTML += `<option value="${encodeURIComponent(m.name)}">${m.name}</option>`;
           }
