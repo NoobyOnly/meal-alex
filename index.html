@@ -56,26 +56,14 @@
 
     main { padding: 1.25rem; max-width: 680px; margin: 0 auto; min-height: calc(100vh - 120px); position: relative; }
     
-    /* ANIMACIJA TABOVA */
     .tab-content { display: none; opacity: 0; width: 100%; }
-    .tab-content.active { 
-      display: flex; 
-      flex-direction: column; 
-      gap: 1rem;
-      opacity: 1;
-    }
+    .tab-content.active { display: flex; flex-direction: column; gap: 1rem; opacity: 1; }
 
     .slide-in-right { animation: slideInRight 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
     .slide-in-left { animation: slideInLeft 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards; }
 
-    @keyframes slideInRight {
-      from { transform: translateX(30px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes slideInLeft {
-      from { transform: translateX(-30px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
+    @keyframes slideInRight { from { transform: translateX(30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes slideInLeft { from { transform: translateX(-30px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
     .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
     .card-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; display: block; }
@@ -95,6 +83,10 @@
     .btn-edit { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; font-size: 0.78rem; padding: 5px 10px; }
     .btn-full { width: 100%; }
     .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+
+    /* MALA DUGMADI ZA STANJE ZALIHA */
+    .btn-qty { width: 24px; height: 24px; min-width: 24px; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 0.9rem; font-weight: 600; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); cursor: pointer; user-select: none; }
+    .btn-qty:active { background: var(--bg); }
 
     .badge { font-family: 'Geist Mono', monospace; font-size: 0.65rem; background: var(--bg); border: 1px solid var(--border); border-radius: 100px; padding: 2px 7px; color: var(--muted); }
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
@@ -172,7 +164,6 @@
 </head>
 <body>
 
-<!-- Loading -->
 <div id="loadingScreen">
   <div class="spinner"></div>
   <p>Učitavanje...</p>
@@ -243,11 +234,11 @@
     <div class="card">
       <span class="card-title">Dodaj u špajz / bazu namirnica</span>
       <p style="font-size:0.75rem; color:var(--muted); margin-top:-0.5rem; margin-bottom:0.75rem;">
-        Unesi pakovanje namirnice (npr. 1000g, 1l, 10kom) i njenu cenu da bi sistem računao troškove obroka.
+        Unesi pakovanje namirnice (npr. 10kom, 1000g, 1l) i njenu cenu da bi sistem računao troškove obroka.
       </p>
       <div class="form-stack">
-        <input id="pantryItemName" type="text" placeholder="Naziv namirnice (npr. Mleko)">
-        <input id="pantryItemAmount" type="text" placeholder="Ukupna količina u pakovanju (npr. 1000ml, 10kom)">
+        <input id="pantryItemName" type="text" placeholder="Naziv namirnice (npr. Jaja)">
+        <input id="pantryItemAmount" type="text" placeholder="Ukupna količina u pakovanju (npr. 10kom, 1000g)">
         <input id="pantryItemPrice" type="number" placeholder="Ukupna cena pakovanja (RSD)" inputmode="numeric">
         <button class="btn btn-primary btn-full" onclick="addPantryItem()">+ Dodaj namirnicu</button>
       </div>
@@ -315,17 +306,19 @@
     <div class="modal-handle"></div>
     <h2 id="modalTitle">Izmeni jelo</h2>
     
-    <!-- Polja za Jelo -->
     <div class="form-stack" id="modalMealFields">
       <input id="editMealName" type="text" placeholder="Naziv jela">
       <textarea id="editMealIngredients"></textarea>
     </div>
 
-    <!-- Polja za Špajz -->
     <div class="form-stack" id="modalPantryFields" style="display:none">
       <input id="editPantryName" type="text" placeholder="Naziv namirnice">
       <input id="editPantryAmount" type="text" placeholder="Količina pakovanja">
       <input id="editPantryPrice" type="number" placeholder="Cena (RSD)" inputmode="numeric">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:0.85rem; color:var(--muted)">Trenutno stanje zaliha:</span>
+        <input id="editPantryCurrentStock" type="number" style="width:90px;" placeholder="Npr. 5">
+      </div>
     </div>
 
     <div class="modal-footer" style="justify-content: space-between; align-items:center; width:100%;">
@@ -338,7 +331,6 @@
   </div>
 </div>
 
-<!-- Firebase Realtime App Script -->
 <script type="module">
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(e => console.log(e));
 
@@ -367,7 +359,7 @@
   let pantry     = [];
   let localShoppingState = {};
   
-  let editingMode = null; // "meal" ili "pantry"
+  let editingMode = null;
   let editingIndex = null;
   let saveTimeout = null;
 
@@ -463,6 +455,7 @@
   }
 
   function parseNumberFromString(str) {
+    if(typeof str !== 'string') str = String(str || '');
     const num = parseFloat(str.replace(/[^0-9.]/g, ''));
     return isNaN(num) ? 1 : num;
   }
@@ -475,7 +468,7 @@
     let totalAmount = parseNumberFromString(pItem.amount);
 
     let reqStr = ingAmountStr.toLowerCase();
-    let totStr = pItem.amount.toLowerCase();
+    let totStr = String(pItem.amount).toLowerCase();
 
     if (reqStr.includes('ml') && (totStr.includes('l') && !totStr.includes('ml'))) {
       totalAmount = totalAmount * 1000;
@@ -518,7 +511,6 @@
     nameEl.focus();
   };
 
-  // ── MODAL ZA EDITOVANJE JELA ILI NAMIRNICA ──
   window.editMeal = function(idx) {
     editingMode = "meal";
     editingIndex = idx;
@@ -547,6 +539,7 @@
     document.getElementById("editPantryName").value = item.name;
     document.getElementById("editPantryAmount").value = item.amount;
     document.getElementById("editPantryPrice").value = item.price;
+    document.getElementById("editPantryCurrentStock").value = item.currentStock !== undefined ? item.currentStock : parseNumberFromString(item.amount);
 
     document.getElementById("editModal").classList.add("open");
   };
@@ -585,11 +578,14 @@
       const newName = document.getElementById("editPantryName").value.trim();
       const newAmount = document.getElementById("editPantryAmount").value.trim();
       const newPrice = Number(document.getElementById("editPantryPrice").value) || 0;
+      const newStock = Number(document.getElementById("editPantryCurrentStock").value);
 
       if (!newName) return;
       pantry[editingIndex].name = newName;
       pantry[editingIndex].amount = newAmount || "1kom";
       pantry[editingIndex].price = newPrice;
+      pantry[editingIndex].currentStock = !isNaN(newStock) ? newStock : parseNumberFromString(newAmount);
+      pantry[editingIndex].inStock = pantry[editingIndex].currentStock > 0;
     }
 
     saveData();
@@ -632,12 +628,17 @@
 
     if (!name) return;
 
+    const maxQty = parseNumberFromString(amount);
     const existingIndex = pantry.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
+    
     if (existingIndex > -1) {
       pantry[existingIndex].amount = amount;
       pantry[existingIndex].price = price;
+      if(pantry[existingIndex].currentStock === undefined) {
+         pantry[existingIndex].currentStock = maxQty;
+      }
     } else {
-      pantry.push({ name, amount, price, inStock: false });
+      pantry.push({ name, amount, price, inStock: false, currentStock: maxQty });
     }
 
     saveData();
@@ -651,9 +652,31 @@
 
   window.togglePantryStock = function(idx, checked) {
     pantry[idx].inStock = checked;
+    if (checked && (pantry[idx].currentStock === undefined || pantry[idx].currentStock === 0)) {
+      pantry[idx].currentStock = parseNumberFromString(pantry[idx].amount);
+    } else if (!checked) {
+      pantry[idx].currentStock = 0;
+    }
     saveData();
     window.generateShopping();
     window.renderPantryList();
+  };
+
+  // BRZA PROMENA KOLIČINE U ŠPAJZU DIREKTNO NA KARTICI
+  window.changePantryQty = function(idx, change) {
+    const item = pantry[idx];
+    const maxQty = parseNumberFromString(item.amount);
+    if (item.currentStock === undefined) item.currentStock = maxQty;
+    
+    let current = item.currentStock + change;
+    if (current < 0) current = 0;
+    
+    item.currentStock = current;
+    item.inStock = current > 0;
+    
+    saveData();
+    window.renderPantryList();
+    window.generateShopping();
   };
 
   window.renderPantryList = function() {
@@ -670,6 +693,7 @@
     pantry.forEach((item, idx) => {
       const isChecked = item.inStock ? "checked" : "";
       const activeClass = item.inStock ? "has-stock" : "";
+      const currentQty = item.currentStock !== undefined ? item.currentStock : parseNumberFromString(item.amount);
       
       const div = document.createElement("div");
       div.className = "meal-card";
@@ -678,11 +702,15 @@
         <div class="meal-card-info" style="display:flex; flex-direction:column; gap:4px; padding-right:0.5rem;">
           <h3 style="margin-bottom:2px;">${item.name}</h3>
           <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
-            <span class="badge" style="font-family:inherit;">Pakovanje: ${item.amount}</span>
+            <span class="badge" style="font-family:inherit; font-weight: 500; background: #f1f5f9;">Na stanju: ${currentQty} od ${item.amount}</span>
             <span class="price" style="font-size:0.78rem; color:var(--text); background:var(--surface); padding:1px 6px; border-radius:4px; border:1px solid var(--border);">${item.price} RSD</span>
           </div>
         </div>
-        <div class="meal-card-actions">
+        <div class="meal-card-actions" style="gap:5px;">
+          <div style="display:flex; gap:3px; align-items:center; margin-right:4px;">
+            <button class="btn-qty" onclick="changePantryQty(${idx}, -1)">–</button>
+            <button class="btn-qty" onclick="changePantryQty(${idx}, 1)">+</button>
+          </div>
           <label class="pantry-status-check ${activeClass}">
             <input type="checkbox" ${isChecked} onchange="togglePantryStock(${idx}, this.checked)">
             Imam
@@ -806,7 +834,7 @@
     pantry.forEach(pantryItem => {
       const matchKey = Object.keys(shoppingMap).find(k => k.toLowerCase() === pantryItem.name.toLowerCase());
       if (matchKey) {
-        if (pantryItem.inStock) {
+        if (pantryItem.inStock && (pantryItem.currentStock === undefined || pantryItem.currentStock > 0)) {
           shoppingMap[matchKey].inPantryAndStocked = true;
           shoppingMap[matchKey].pantryAmount = pantryItem.amount;
         }
@@ -876,12 +904,14 @@
       const pantryIdx = pantry.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
       if (pantryIdx > -1) {
         pantry[pantryIdx].inStock = true;
+        pantry[pantryIdx].currentStock = parseNumberFromString(pantry[pantryIdx].amount);
       } else {
         pantry.push({
           name: name,
           amount: amountDisplay,
           price: 0,
-          inStock: true
+          inStock: true,
+          currentStock: parseNumberFromString(amountDisplay)
         });
       }
     } else {
@@ -891,6 +921,7 @@
       const pantryIdx = pantry.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
       if (pantryIdx > -1) {
         pantry[pantryIdx].inStock = false;
+        pantry[pantryIdx].currentStock = 0;
       }
     }
 
@@ -905,7 +936,15 @@
       return;
     }
 
-    if(confirm(`Završavaš kupovinu? Sve štiklirane namirnice ostaju bezbedno sačuvane u Špajzu kao 'Ima na stanju'.`)) {
+    if(confirm(`Završavaš kupovinu? Sve štiklirane namirnice biće prebačene u Špajz sa maksimalnim zalihama.`)) {
+      checkedItems.forEach(li => {
+        const name = decodeURIComponent(li.getAttribute("data-name"));
+        const pantryIdx = pantry.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+        if(pantryIdx > -1) {
+          pantry[pantryIdx].inStock = true;
+          pantry[pantryIdx].currentStock = parseNumberFromString(pantry[pantryIdx].amount);
+        }
+      });
       localShoppingState = {};
       saveData();
       renderAll();
@@ -951,7 +990,6 @@
     if (!weekLabel || !dateLabel) return;
 
     const now = new Date();
-    
     const dan = String(now.getDate()).padStart(2, '0');
     const mesec = String(now.getMonth() + 1).padStart(2, '0');
     const godina = now.getFullYear();
@@ -966,7 +1004,6 @@
       target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
     }
     const weekNum = 1 + Math.ceil((firstThursday - target) / 604800000);
-    
     weekLabel.textContent = `NEDELJA ${weekNum}, ${godina}`;
   }
 
@@ -978,7 +1015,7 @@
     let touchEndY = 0;
 
     swipeArea.addEventListener('touchstart', (e) => {
-      if (e.target.type === 'checkbox' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal')) {
+      if (e.target.type === 'checkbox' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal') || e.target.classList.contains('btn-qty')) {
         return;
       }
       touchStartX = e.changedTouches[0].screenX;
@@ -986,7 +1023,7 @@
     }, { passive: true });
 
     swipeArea.addEventListener('touchend', (e) => {
-      if (e.target.type === 'checkbox' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal')) {
+      if (e.target.type === 'checkbox' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal') || e.target.classList.contains('btn-qty')) {
         return;
       }
       touchEndX = e.changedTouches[0].screenX;
@@ -1001,7 +1038,6 @@
       if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 70) {
         const currentActiveContent = document.querySelector(".tab-content.active");
         if (!currentActiveContent) return;
-        
         const currentTabId = currentActiveContent.id;
         const currentIndex = TAB_ORDER.indexOf(currentTabId);
         
@@ -1022,16 +1058,13 @@
 
   function initSearchEventListener() {
     const searchInput = document.getElementById("mealSearch");
-    if (searchInput) {
-      searchInput.addEventListener("input", window.renderMealsList);
-    }
+    if (searchInput) searchInput.addEventListener("input", window.renderMealsList);
   }
 
   initHeaderLabels();
   initRealtimeSync();
   initSwipeNavigation();
   initSearchEventListener();
-
 </script>
 </body>
 </html>
