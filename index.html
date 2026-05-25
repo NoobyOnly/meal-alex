@@ -84,7 +84,6 @@
     .btn-full { width: 100%; }
     .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 
-    /* MALA DUGMADI ZA STANJE ZALIHA */
     .btn-qty { width: 24px; height: 24px; min-width: 24px; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 0.9rem; font-weight: 600; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); cursor: pointer; user-select: none; }
     .btn-qty:active { background: var(--bg); }
 
@@ -104,8 +103,18 @@
     .pantry-status-check input { width: 14px; height: 14px; cursor: pointer; accent-color: #16a34a; margin: 0; padding: 0; }
     .pantry-status-check.has-stock { border-color: #bbf7d0; color: #15803d; background: #f0fdf4; }
 
-    .planner-day { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); }
-    .planner-day-header { padding: 0.6rem 0.9rem; font-size: 0.78rem; font-weight: 600; background: var(--bg); border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+    /* PLANNER DAY TRACKING & SCRATCH STYLES */
+    .planner-day { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); transition: all 0.25s ease; }
+    .planner-day-header { padding: 0.6rem 0.9rem; font-size: 0.78rem; font-weight: 600; background: var(--bg); border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; display: flex; justify-content: space-between; align-items: center; }
+    
+    .scratch-checkbox { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; font-weight: 500; color: var(--muted); cursor: pointer; text-transform: none; letter-spacing: 0; }
+    .scratch-checkbox input { width: 14px; height: 14px; accent-color: #16a34a; cursor: pointer; margin: 0; }
+
+    /* Efekat kada je dan ispoštovan (Sreban / Scratch-out) */
+    .planner-day.scratched { opacity: 0.45; filter: grayscale(30%); background: #faf9f6; transform: scale(0.99); }
+    .planner-day.scratched .planner-row select { text-decoration: line-through; pointer-events: none; }
+    .planner-day.scratched .meal-type-tag { opacity: 0.6; }
+
     .planner-row { display: flex; align-items: center; padding: 0.5rem 0.9rem; border-bottom: 1px solid var(--border); gap: 0.75rem; }
     .planner-row:last-child { border-bottom: none; }
     .meal-type-tag { flex-shrink: 0; font-size: 0.7rem; font-weight: 600; padding: 3px 9px; border-radius: 100px; min-width: 62px; text-align: center; }
@@ -113,7 +122,7 @@
     .tag-uzina   { background: var(--uzina);   color: var(--uzina-text); }
     .tag-rucak   { background: var(--rucak);   color: var(--rucak-text); }
     .tag-vecera  { background: var(--vecera);  color: var(--vecera-text); }
-    .planner-row select { flex: 1; background: transparent; border: 1px solid transparent; padding: 4px 6px; font-size: 0.84rem; border-radius: 6px; color: var(--text); -webkit-appearance: select; -moz-appearance: select; appearance: select; }
+    .planner-row select { flex: 1; background: transparent; border: 1px solid transparent; padding: 4px 6px; font-size: 0.84rem; border-radius: 6px; color: var(--text); appearance: select; -webkit-appearance: select; }
     .planner-row select:hover { border-color: var(--border); background: var(--bg); }
     .planner-row select:focus { border-color: var(--text); background: var(--bg); box-shadow: none; }
 
@@ -199,7 +208,7 @@
   <div id="planTab" class="tab-content active">
     <div class="card" style="padding:1rem">
       <div class="section-header">
-        <span class="card-title">Nedeljni plan</span>
+        <span class="card-title">Nedeljni plan & Praćenje</span>
         <button class="btn btn-ghost" onclick="resetPlan()">Resetuj</button>
       </div>
       <div id="plannerBody" style="display:flex;flex-direction:column;gap:0.6rem"></div>
@@ -272,7 +281,6 @@
       <div class="section-header">
         <span class="card-title">Lista za kupovinu</span>
         <div style="display:flex; gap:6px; align-items:center;">
-          <!-- NOVO DUGME ZA DELJENJE LISTE -->
           <button class="btn btn-ghost" id="shareShoppingBtn" onclick="shareShoppingList()" style="display:none; color: var(--text); font-weight:500;">
             <span style="font-size:1.1rem; line-height:1;">⎋</span> Podeli listu
           </button>
@@ -360,9 +368,10 @@
   const TYPE_TAGS  = { "Doručak":"tag-dorucak","Užina":"tag-uzina","Ručak":"tag-rucak","Večera":"tag-vecera" };
   const TAB_ORDER  = ["planTab", "mealsTab", "pantryTab", "shoppingTab", "statsTab"];
 
-  let meals      = [];
-  let weeklyPlan = {};
-  let pantry     = [];
+  let meals       = [];
+  let weeklyPlan  = {};
+  let pantry      = [];
+  let scratchedDays = {}; // NOVO: Praćenje ispoštovanih dana {"Ponedeljak": true, "Utorak": false...}
   let localShoppingState = {};
   
   let editingMode = null;
@@ -382,7 +391,7 @@
     saveTimeout = setTimeout(async () => {
       setSyncStatus("syncing");
       try {
-        await setDoc(doc(db, "planner", "data"), { meals, weeklyPlan, pantry });
+        await setDoc(doc(db, "planner", "data"), { meals, weeklyPlan, pantry, scratchedDays });
         setSyncStatus("synced");
       } catch(e) {
         console.error(e);
@@ -403,9 +412,10 @@
     onSnapshot(doc(db, "planner", "data"), (snap) => {
       if (snap.exists()) {
         const d = snap.data();
-        meals      = d.meals      || [];
-        weeklyPlan = d.weeklyPlan || {};
-        pantry     = d.pantry     || [];
+        meals         = d.meals         || [];
+        weeklyPlan    = d.weeklyPlan    || {};
+        pantry        = d.pantry        || [];
+        scratchedDays = d.scratchedDays || {}; // Učitavanje stanja trackinga
       }
       const loader = document.getElementById("loadingScreen");
       if (loader) loader.style.display = "none";
@@ -758,15 +768,40 @@
     });
   };
 
+  // NOVO: Funkcija koja menja stanje praćenja dana (Scratch/Tracking)
+  window.toggleDayScratch = function(day, checked) {
+    scratchedDays[day] = checked;
+    const dayCard = document.getElementById(`daycard-${day}`);
+    if (dayCard) {
+      if (checked) dayCard.classList.add("scratched");
+      else dayCard.classList.remove("scratched");
+    }
+    saveData();
+  };
+
   function renderPlanner() {
     const body = document.getElementById("plannerBody");
     if(!body) return;
     body.innerHTML = "";
     
     DAYS.forEach(day => {
+      const isScratched = scratchedDays[day] === true;
+      const scratchedClass = isScratched ? "scratched" : "";
+      const isCheckedAttribute = isScratched ? "checked" : "";
+
       const wrap = document.createElement("div");
-      wrap.className = "planner-day";
-      wrap.innerHTML = `<div class="planner-day-header">${day}</div><div class="planner-day-body"></div>`;
+      wrap.className = `planner-day ${scratchedClass}`;
+      wrap.id = `daycard-${day}`;
+      wrap.innerHTML = `
+        <div class="planner-day-header">
+          <span>${day}</span>
+          <label class="scratch-checkbox">
+            <input type="checkbox" ${isCheckedAttribute} onchange="toggleDayScratch('${day}', this.checked)">
+            Ispoštovano
+          </label>
+        </div>
+        <div class="planner-day-body"></div>`;
+      
       const dayBody = wrap.querySelector(".planner-day-body");
 
       MEAL_TYPES.forEach(type => {
@@ -799,8 +834,9 @@
   }
 
   window.resetPlan = function() {
-    if (!confirm("Resetovati ceo nedeljni plan?")) return;
+    if (!confirm("Resetovati ceo nedeljni plan i statuse praćenja?")) return;
     weeklyPlan = {};
+    scratchedDays = {}; // Čisti i tracking istoriju za tu nedelju
     saveData();
     renderPlanner();
     updateStats();
@@ -937,14 +973,12 @@
     updateUncheckedCount();
   };
 
-  // NOVA FUNKCIJA ZA DELJENJE LISTE PREKO SMS / VIBER-A
   window.shareShoppingList = function() {
     const items = document.querySelectorAll("#shoppingList .shopping-item");
     let textMessage = "🛒 LISTA ZA KUPOVINU:\n\n";
     let count = 0;
 
     items.forEach(li => {
-      // Uzimamo samo stavke koje NISU označene (nisu precrtane)
       if (!li.classList.contains("checked")) {
         const name = decodeURIComponent(li.getAttribute("data-name"));
         const amount = decodeURIComponent(li.getAttribute("data-amount"));
@@ -958,14 +992,12 @@
       return;
     }
 
-    // Provera da li telefon podržava sistemski Share API (radi na telefonima preko HTTPS-a)
     if (navigator.share) {
       navigator.share({
         title: 'Lista za kupovinu',
         text: textMessage
       }).catch(err => console.log("Greška prilikom deljenja:", err));
     } else {
-      // Ako pretraživač ne podržava Share API, kopira tekst u clipboard i obaveštava korisnika
       navigator.clipboard.writeText(textMessage).then(() => {
         alert("Lista je kopirana u privremenu memoriju (Clipboard)! Sada je možeš samo nalepiti (Paste) u Viber ili SMS.");
       }).catch(err => {
