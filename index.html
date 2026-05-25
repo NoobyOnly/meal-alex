@@ -103,7 +103,12 @@
     .meal-card h3 { font-size: 0.9rem; font-weight: 600; margin-bottom: 2px; }
     .meal-card .price { font-family: 'Geist Mono', monospace; font-size: 0.75rem; color: var(--muted); }
     .meal-card .ingredients { font-size: 0.75rem; color: var(--muted); margin-top: 5px; line-height: 1.7; }
-    .meal-card-actions { display: flex; gap: 4px; flex-shrink: 0; }
+    .meal-card-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+    /* STYLING ZA NOVI PANTRY CHECKBOX */
+    .pantry-status-check { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 500; color: var(--muted); cursor: pointer; background: var(--surface); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); user-select: none; }
+    .pantry-status-check input { width: 14px; height: 14px; cursor: pointer; accent-color: #16a34a; margin: 0; padding: 0; }
+    .pantry-status-check.has-stock { border-color: #bbf7d0; color: #15803d; background: #f0fdf4; }
 
     .planner-day { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); }
     .planner-day-header { padding: 0.6rem 0.9rem; font-size: 0.78rem; font-weight: 600; background: var(--bg); border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
@@ -551,8 +556,10 @@
     if (existingIndex > -1) {
       pantry[existingIndex].amount = amount;
       pantry[existingIndex].price = price;
+      // Zadržavamo staro stanje prekidača ako namirnica već postoji
     } else {
-      pantry.push({ name, amount, price });
+      // Podrazumevano je FALSE (nemamo na stanju) kada se tek unese cena
+      pantry.push({ name, amount, price, inStock: false });
     }
 
     saveData();
@@ -570,6 +577,15 @@
     renderAll();
   };
 
+  // Funkcija koja menja stanje prekidača u špajzu (Imam / Nemam)
+  window.togglePantryStock = function(idx, checked) {
+    pantry[idx].inStock = checked;
+    saveData();
+    // Odmah osvežava i listu za kupovinu u pozadini
+    window.generateShopping();
+    window.renderPantryList();
+  };
+
   window.renderPantryList = function() {
     const container = document.getElementById("pantryList");
     if (!container) return;
@@ -582,25 +598,31 @@
 
     container.innerHTML = "";
     pantry.forEach((item, idx) => {
+      const isChecked = item.inStock ? "checked" : "";
+      const activeClass = item.inStock ? "has-stock" : "";
+      
       const div = document.createElement("div");
       div.className = "meal-card";
       div.style.padding = "0.6rem 1rem";
       div.innerHTML = `
-        <div class="meal-card-info" style="display:flex; align-items:center; justify-content:space-between; padding-right:1rem;">
-          <h3 style="margin-bottom:0;">${item.name}</h3>
-          <div style="display:flex; gap:0.5rem; align-items:center;">
+        <div class="meal-card-info" style="display:flex; flex-direction:column; gap:4px; padding-right:0.5rem;">
+          <h3 style="margin-bottom:2px;">${item.name}</h3>
+          <div style="display:flex; gap:0.4rem; align-items:center; flex-wrap:wrap;">
             <span class="badge" style="font-family:inherit;">Pakovanje: ${item.amount}</span>
-            <span class="price" style="font-size:0.85rem; color:var(--text); background:var(--surface); padding:2px 8px; border-radius:6px; border:1px solid var(--border);">${item.price} RSD</span>
+            <span class="price" style="font-size:0.78rem; color:var(--text); background:var(--surface); padding:1px 6px; border-radius:4px; border:1px solid var(--border);">${item.price} RSD</span>
           </div>
         </div>
         <div class="meal-card-actions">
-          <button class="btn btn-danger" onclick="deletePantryItem(${idx})" style="padding: 4px 8px;">✕</button>
+          <label class="pantry-status-check ${activeClass}">
+            <input type="checkbox" ${isChecked} onchange="togglePantryStock(${idx}, this.checked)">
+            Imam
+          </label>
+          <button class="btn btn-danger" onclick="deletePantryItem(${idx})" style="padding: 5px 9px;">✕</button>
         </div>`;
       container.appendChild(div);
     });
   };
 
-  // ── POPRAVLJENA I VEZANA FUNKCIJA ZA PRETRAGU JELA ───────
   window.renderMealsList = function() {
     const searchInput = document.getElementById("mealSearch");
     const query = searchInput ? searchInput.value.toLowerCase().trim() : "";
@@ -705,18 +727,21 @@
         if (!daysLimit || daysToProcess.includes(day)) {
           total += getMealPrice(meal);
           meal.ingredients.forEach(i => {
-            if (!shoppingMap[i.name]) shoppingMap[i.name] = { amounts: [], inPantry: false, pantryAmount: "" };
+            if (!shoppingMap[i.name]) shoppingMap[i.name] = { amounts: [], inPantryAndStocked: false, pantryAmount: "" };
             if (i.amount) shoppingMap[i.name].amounts.push(i.amount);
           });
         }
       });
     });
 
+    // Proveravamo da li je namirnica uneta u špajz I da li je eksplicitno čekirana kao "Imam"
     pantry.forEach(pantryItem => {
       const matchKey = Object.keys(shoppingMap).find(k => k.toLowerCase() === pantryItem.name.toLowerCase());
       if (matchKey) {
-        shoppingMap[matchKey].inPantry = true;
-        shoppingMap[matchKey].pantryAmount = pantryItem.amount;
+        if (pantryItem.inStock) {
+          shoppingMap[matchKey].inPantryAndStocked = true;
+          shoppingMap[matchKey].pantryAmount = pantryItem.amount;
+        }
       }
     });
 
@@ -744,8 +769,9 @@
       let isChecked = "";
       let checkedClass = "";
       
-      if (data.inPantry) {
-        pantryBadgeHtml = `<span class="pantry-notice">Imate u špajzu (${data.pantryAmount})</span>`;
+      // Ako je označeno "Imam" u špajzu, automatski se prekriži na listi za kupovinu
+      if (data.inPantryAndStocked) {
+        pantryBadgeHtml = `<span class="pantry-notice">Imaš na stanju (${data.pantryAmount})</span>`;
         isChecked = "checked";
         checkedClass = "checked";
       }
@@ -800,7 +826,7 @@
     const wTotalEl = document.getElementById("statWeekTotal");
 
     if (mCountEl) mCountEl.textContent = meals.length;
-    if (avgPriceEl) avgPriceEl.textContent = `${avgPrice} RSD`;
+    if (activeBtn => avgPriceEl) avgPriceEl.textContent = `${avgPrice} RSD`;
     if (wTotalEl) wTotalEl.textContent = `${currentWeekTotal} RSD`;
   }
 
@@ -824,7 +850,7 @@
     let touchEndY = 0;
 
     swipeArea.addEventListener('touchstart', (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal')) {
+      if (e.target.type === 'checkbox' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal')) {
         return;
       }
       touchStartX = e.changedTouches[0].screenX;
@@ -832,7 +858,7 @@
     }, { passive: true });
 
     swipeArea.addEventListener('touchend', (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal')) {
+      if (e.target.type === 'checkbox' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal')) {
         return;
       }
       touchEndX = e.changedTouches[0].screenX;
@@ -866,7 +892,6 @@
     }
   }
 
-  // ── VEZIVANJE EVENT LISTENERA ZA SEARCH POLJE ────────────
   function initSearchEventListener() {
     const searchInput = document.getElementById("mealSearch");
     if (searchInput) {
