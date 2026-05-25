@@ -278,7 +278,10 @@
       <div style="font-family:'Geist Mono',monospace;font-size:1.1rem;color:var(--muted)" id="uncheckedCount">— stavki</div>
     </div>
     <div class="card">
-      <span class="card-title">Lista za kupovinu</span>
+      <div class="section-header">
+        <span class="card-title">Lista za kupovinu</span>
+        <button class="btn btn-ghost" id="finishShoppingBtn" onclick="finishShopping()" style="display:none; color: #16a34a; font-weight:600;">✓ Završi kupovinu</button>
+      </div>
       <ul id="shoppingList" style="list-style:none"></ul>
     </div>
   </div>
@@ -348,6 +351,7 @@
   let meals      = [];
   let weeklyPlan = {};
   let pantry     = [];
+  let localShoppingState = {}; // Kešira lokalno stanje šta je štiklirano u toku kupovine
   let editingMealIndex = null;
   let saveTimeout = null;
 
@@ -620,6 +624,7 @@
             <span class="price" style="font-size:0.78rem; color:var(--text); background:var(--surface); padding:1px 6px; border-radius:4px; border:1px solid var(--border);">${item.price} RSD</span>
           </div>
         </div>
+        <div class="modal-handle" style="display:none"></div>
         <div class="meal-card-actions">
           <label class="pantry-status-check ${activeClass}">
             <input type="checkbox" ${isChecked} onchange="togglePantryStock(${idx}, this.checked)">
@@ -759,11 +764,16 @@
     if (!list) return;
     const entries = Object.entries(shoppingMap);
 
+    const finishBtn = document.getElementById("finishShoppingBtn");
+
     if (entries.length === 0) {
       list.innerHTML = `<div class="empty-state">Nema planiranih obroka za izabrani period.<br>Popuni plan pa generiši listu.</div>`;
       document.getElementById("uncheckedCount").textContent = "0 / 0 stavki";
+      if(finishBtn) finishBtn.style.display = "none";
       return;
     }
+
+    if(finishBtn) finishBtn.style.display = "inline-block";
 
     let finalHtml = "";
     let itemIdx = 0;
@@ -776,14 +786,15 @@
       let isChecked = "";
       let checkedClass = "";
       
-      if (data.inPantryAndStocked) {
-        pantryBadgeHtml = `<span class="pantry-notice">Imaš na stanju (${data.pantryAmount})</span>`;
+      // Proveravamo da li je već štiklirano u bazi ili u lokalnom sesijskom kešu kupovine
+      if (data.inPantryAndStocked || localShoppingState[name.toLowerCase()] === true) {
+        pantryBadgeHtml = `<span class="pantry-notice">Imaš na stanju</span>`;
         isChecked = "checked";
         checkedClass = "checked";
       }
 
       finalHtml += `
-        <li class="shopping-item ${checkedClass}" id="si-${cleanId}">
+        <li class="shopping-item ${checkedClass}" id="si-${cleanId}" data-name="${encodeURIComponent(name)}" data-amount="${encodeURIComponent(amountsDisplay)}">
           <input type="checkbox" id="cb-${cleanId}" ${isChecked} onchange="toggleShoppingItem(this,'${cleanId}')">
           <label for="cb-${cleanId}">
             <span class="item-name">${name}</span>
@@ -796,11 +807,61 @@
     updateUncheckedCount();
   };
 
+  // ── NOVA INTEGRISANA LOGIKA ZA PREBACIVANJE U ŠPAJZ DIREKTNO NA KLIK ──
   window.toggleShoppingItem = function(cb, id) {
     const li = document.getElementById(`si-${id}`);
     if(!li) return;
-    cb.checked ? li.classList.add("checked") : li.classList.remove("checked");
+    
+    const name = decodeURIComponent(li.getAttribute("data-name"));
+    const amountDisplay = decodeURIComponent(li.getAttribute("data-amount"));
+
+    if (cb.checked) {
+      li.classList.add("checked");
+      localShoppingState[name.toLowerCase()] = true;
+
+      // Tražimo artikal u špajzu
+      const pantryIdx = pantry.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+      if (pantryIdx > -1) {
+        // Ako postoji, odmah ga stavi na stanje
+        pantry[pantryIdx].inStock = true;
+      } else {
+        // Ako ne postoji, napravi ga automatski u bazi sa unetom količinom
+        pantry.push({
+          name: name,
+          amount: amountDisplay,
+          price: 0, // Korisnik naknadno može dodati cenu u tabu Špajz
+          inStock: true
+        });
+      }
+    } else {
+      li.classList.remove("checked");
+      localShoppingState[name.toLowerCase()] = false;
+
+      const pantryIdx = pantry.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+      if (pantryIdx > -1) {
+        pantry[pantryIdx].inStock = false;
+      }
+    }
+
+    // Tiho i brzo čuvamo stanje u Firebase-u bez kompletnog prerendera ekrana u sekundi klika
+    saveData();
     updateUncheckedCount();
+  };
+
+  // ── NOVA FUNKCIJA: KRAJ KUPOVINE (Čišćenje kupljenih artikala iz plana) ──
+  window.finishShopping = function() {
+    const checkedItems = document.querySelectorAll("#shoppingList .shopping-item.checked");
+    if(checkedItems.length === 0) {
+      alert("Nisi štiklirao/la nijednu stavku za završetak.");
+      return;
+    }
+
+    if(confirm(`Završavaš kupovinu? Sve štiklirane namirnice ostaju bezbedno sačuvane u Špajzu kao 'Ima na stanju'.`)) {
+      // Brišemo privremeni keš jer je sve trajno upisano u špajz bazu
+      localShoppingState = {};
+      saveData();
+      renderAll();
+    }
   };
 
   function updateUncheckedCount() {
@@ -836,7 +897,6 @@
     if (wTotalEl) wTotalEl.textContent = `${currentWeekTotal} RSD`;
   }
 
-  // ISPRAVLJENA LOGIKA ZA NUMERISANJE NEDELJA I DODAT DATUM
   function initHeaderLabels() {
     const weekLabel = document.getElementById("weekLabel");
     const dateLabel = document.getElementById("dateLabel");
@@ -844,13 +904,11 @@
 
     const now = new Date();
     
-    // Formatiranje današnjeg datuma (npr. 25.05.2026.)
     const dan = String(now.getDate()).padStart(2, '0');
     const mesec = String(now.getMonth() + 1).padStart(2, '0');
     const godina = now.getFullYear();
     dateLabel.textContent = `${dan}.${mesec}.${godina}.`;
 
-    // Standardni ISO-8601 algoritam za računanje broja nedelje (Ponedeljak je prvi dan)
     const target = new Date(now.valueOf());
     const dayNr = (now.getDay() + 6) % 7;
     target.setDate(target.getDate() - dayNr + 3);
