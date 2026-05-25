@@ -29,7 +29,7 @@
       --vecera:  #fee2e2; --vecera-text:  #991b1b;
     }
 
-    body { font-family: 'Geist', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 2rem; overflow-x: hidden; }
+    body { font-family: 'Geist', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 5rem; overflow-x: hidden; position: relative; }
 
     header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 20; }
     .header-left { display: flex; align-items: center; gap: 10px; }
@@ -41,7 +41,6 @@
     .week-pill { font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--muted); background: var(--bg); border: 1px solid var(--border); padding: 4px 10px; border-radius: 100px; white-space: nowrap; }
     .date-pill { font-size: 0.68rem; color: var(--muted); font-weight: 500; }
 
-    /* SYNC STATUS */
     .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #d1d5db; display: inline-block; margin-right: 4px; transition: background 0.3s; }
     .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
     .sync-dot.synced  { background: #22c55e; }
@@ -103,18 +102,8 @@
     .pantry-status-check input { width: 14px; height: 14px; cursor: pointer; accent-color: #16a34a; margin: 0; padding: 0; }
     .pantry-status-check.has-stock { border-color: #bbf7d0; color: #15803d; background: #f0fdf4; }
 
-    /* PLANNER DAY TRACKING & SCRATCH STYLES */
-    .planner-day { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); transition: all 0.25s ease; }
-    .planner-day-header { padding: 0.6rem 0.9rem; font-size: 0.78rem; font-weight: 600; background: var(--bg); border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; display: flex; justify-content: space-between; align-items: center; }
-    
-    .scratch-checkbox { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; font-weight: 500; color: var(--muted); cursor: pointer; text-transform: none; letter-spacing: 0; }
-    .scratch-checkbox input { width: 14px; height: 14px; accent-color: #16a34a; cursor: pointer; margin: 0; }
-
-    /* Efekat kada je dan ispoštovan (Sreban / Scratch-out) */
-    .planner-day.scratched { opacity: 0.45; filter: grayscale(30%); background: #faf9f6; transform: scale(0.99); }
-    .planner-day.scratched .planner-row select { text-decoration: line-through; pointer-events: none; }
-    .planner-day.scratched .meal-type-tag { opacity: 0.6; }
-
+    .planner-day { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); }
+    .planner-day-header { padding: 0.6rem 0.9rem; font-size: 0.78rem; font-weight: 600; background: var(--bg); border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
     .planner-row { display: flex; align-items: center; padding: 0.5rem 0.9rem; border-bottom: 1px solid var(--border); gap: 0.75rem; }
     .planner-row:last-child { border-bottom: none; }
     .meal-type-tag { flex-shrink: 0; font-size: 0.7rem; font-weight: 600; padding: 3px 9px; border-radius: 100px; min-width: 62px; text-align: center; }
@@ -165,6 +154,29 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     #loadingScreen p { font-size: 0.85rem; color: var(--muted); }
 
+    /* LEBDEĆE DUGME ZA KALENDAR (FAB) */
+    .fab-cal { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 56px; height: 56px; background: var(--text); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,0.2); cursor: pointer; z-index: 90; transition: transform 0.15s; }
+    .fab-cal:active { transform: scale(0.92); }
+    .fab-cal svg { width: 24px; height: 24px; fill: #ffffff; }
+
+    /* KALENDAR MREŽA I STILOVI */
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; margin-top: 0.5rem; }
+    .cal-day-name { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; padding-bottom: 4px; }
+    
+    .cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.88rem; font-weight: 500; border-radius: 8px; background: var(--bg); cursor: pointer; position: relative; overflow: hidden; user-select: none; border: 1px solid transparent; }
+    .cal-cell.empty { background: transparent; cursor: default; }
+    .cal-cell.today { border-color: var(--text); font-weight: 600; }
+    
+    /* Scratch-off efekat (grebanje) */
+    .cal-cell.scratched { background: #f0fdf4; color: #16a34a; }
+    .cal-cell.scratched::after { content: ''; position: absolute; inset: 4px; border: 1.5px dashed #16a34a; border-radius: 6px; opacity: 0.5; animation: scratchIn 0.25s ease-out forwards; }
+    
+    /* Tekstualna linija grebanja */
+    .scratch-line { position: absolute; width: 0%; height: 2px; background: #16a34a; top: 50%; left: 10%; transform: translateY(-50%) rotate(-10deg); transition: width 0.2s ease-in-out; pointer-events: none; }
+    .cal-cell.scratched .scratch-line { width: 80%; }
+
+    @keyframes scratchIn { from { transform: scale(1.1); opacity: 0; } to { transform: scale(1); opacity: 0.5; } }
+
     @media (min-width: 520px) {
       .modal { border-radius: var(--radius); margin-bottom: 2rem; }
       .modal-overlay { align-items: center; padding: 1rem; }
@@ -208,7 +220,7 @@
   <div id="planTab" class="tab-content active">
     <div class="card" style="padding:1rem">
       <div class="section-header">
-        <span class="card-title">Nedeljni plan & Praćenje</span>
+        <span class="card-title">Nedeljni plan obroka</span>
         <button class="btn btn-ghost" onclick="resetPlan()">Resetuj</button>
       </div>
       <div id="plannerBody" style="display:flex;flex-direction:column;gap:0.6rem"></div>
@@ -314,6 +326,13 @@
 
 </main>
 
+<!-- LEBDEĆE DUGME ZA TRACKING (KALENDAR FAB) -->
+<div class="fab-cal" onclick="openCalendarModal()" title="Otvori kalendar praćenja">
+  <svg viewBox="0 0 24 24">
+    <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+  </svg>
+</div>
+
 <!-- JEDINSTVENI MODAL ZA IZMENU JELA I ŠPAJZA -->
 <div class="modal-overlay" id="editModal" onclick="handleModalClick(event)">
   <div class="modal">
@@ -345,6 +364,31 @@
   </div>
 </div>
 
+<!-- NOVI MODAL: KALENDAR ZA TRACKING (GREBANJE) -->
+<div class="modal-overlay" id="calendarModal" onclick="handleCalendarModalClick(event)">
+  <div class="modal" style="max-width: 420px;">
+    <div class="modal-handle"></div>
+    <h2 id="calModalTitle" style="text-align: center; margin-bottom: 0.25rem;">Kalendar praćenja</h2>
+    <p style="text-align:center; font-size:0.75rem; color:var(--muted); margin-bottom:1rem;">Tapni na dan da ga izgrebeš/poništiš</p>
+    
+    <div class="cal-grid">
+      <div class="cal-day-name">P</div>
+      <div class="cal-day-name">U</div>
+      <div class="cal-day-name">S</div>
+      <div class="cal-day-name">Č</div>
+      <div class="cal-day-name">P</div>
+      <div class="cal-day-name">S</div>
+      <div class="cal-day-name">N</div>
+    </div>
+    
+    <div class="cal-grid" id="calendarDaysGrid"></div>
+
+    <div class="modal-footer" style="justify-content: center; margin-top: 1.25rem;">
+      <button class="btn btn-primary" onclick="closeCalendarModal()">Zatvori</button>
+    </div>
+  </div>
+</div>
+
 <script type="module">
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(e => console.log(e));
 
@@ -371,7 +415,7 @@
   let meals       = [];
   let weeklyPlan  = {};
   let pantry      = [];
-  let scratchedDays = {}; // NOVO: Praćenje ispoštovanih dana {"Ponedeljak": true, "Utorak": false...}
+  let scratchedDates = {}; // NOVO: Format pamćenja {"2026-05-25": true} za stabilan kalendar kroz mesece
   let localShoppingState = {};
   
   let editingMode = null;
@@ -391,7 +435,7 @@
     saveTimeout = setTimeout(async () => {
       setSyncStatus("syncing");
       try {
-        await setDoc(doc(db, "planner", "data"), { meals, weeklyPlan, pantry, scratchedDays });
+        await setDoc(doc(db, "planner", "data"), { meals, weeklyPlan, pantry, scratchedDates });
         setSyncStatus("synced");
       } catch(e) {
         console.error(e);
@@ -406,16 +450,17 @@
     window.renderPantryList();
     window.generateShopping();
     updateStats();
+    renderCalendarGrid();
   }
 
   function initRealtimeSync() {
     onSnapshot(doc(db, "planner", "data"), (snap) => {
       if (snap.exists()) {
         const d = snap.data();
-        meals         = d.meals         || [];
-        weeklyPlan    = d.weeklyPlan    || {};
-        pantry        = d.pantry        || [];
-        scratchedDays = d.scratchedDays || {}; // Učitavanje stanja trackinga
+        meals          = d.meals          || [];
+        weeklyPlan     = d.weeklyPlan     || {};
+        pantry         = d.pantry         || [];
+        scratchedDates = d.scratchedDates || {};
       }
       const loader = document.getElementById("loadingScreen");
       if (loader) loader.style.display = "none";
@@ -768,16 +813,72 @@
     });
   };
 
-  // NOVO: Funkcija koja menja stanje praćenja dana (Scratch/Tracking)
-  window.toggleDayScratch = function(day, checked) {
-    scratchedDays[day] = checked;
-    const dayCard = document.getElementById(`daycard-${day}`);
-    if (dayCard) {
-      if (checked) dayCard.classList.add("scratched");
-      else dayCard.classList.remove("scratched");
-    }
-    saveData();
+  // NOVO: KALENDAR I SCRATCH LOGIKA NA TAP
+  window.openCalendarModal = function() {
+    const months = ["Januar","Februar","Mart","April","Maj","Jun","Jul","Avgust","Septembar","Oktobar","Novembar","Decembar"];
+    const now = new Date();
+    document.getElementById("calModalTitle").textContent = `${months[now.getMonth()]} ${now.getFullYear()}`;
+    
+    renderCalendarGrid();
+    document.getElementById("calendarModal").classList.add("open");
   };
+
+  window.closeCalendarModal = function() {
+    document.getElementById("calendarModal").classList.remove("open");
+  };
+
+  window.handleCalendarModalClick = function(e) {
+    if (e.target === document.getElementById("calendarModal")) window.closeCalendarModal();
+  };
+
+  function renderCalendarGrid() {
+    const grid = document.getElementById("calendarDaysGrid");
+    if (!grid) return;
+    grid.innerHTML = "";
+
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const todayStr = `${year}-${String(month+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+
+    // Određivanje prvog dana u mesecu (prilagođeno da ponedeljak bude 0)
+    let firstDayIndex = new Date(year, month, 1).getDay();
+    firstDayIndex = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    // Prazne ćelije za početak meseca
+    for (let i = 0; i < firstDayIndex; i++) {
+      const emptyCell = document.createElement("div");
+      emptyCell.className = "cal-cell empty";
+      grid.appendChild(emptyCell);
+    }
+
+    // Generisanje dana
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+      const isScratched = scratchedDates[dateStr] === true;
+      const isToday = dateStr === todayStr;
+
+      const cell = document.createElement("div");
+      cell.className = `cal-cell ${isScratched ? 'scratched' : ''} ${isToday ? 'today' : ''}`;
+      cell.innerHTML = `${day}<span class="scratch-line"></span>`;
+
+      cell.onclick = () => {
+        // Toggle scratch status sa animacijom
+        if (scratchedDates[dateStr]) {
+          delete scratchedDates[dateStr];
+          cell.classList.remove("scratched");
+        } else {
+          scratchedDates[dateStr] = true;
+          cell.classList.add("scratched");
+        }
+        saveData();
+      };
+
+      grid.appendChild(cell);
+    }
+  }
 
   function renderPlanner() {
     const body = document.getElementById("plannerBody");
@@ -785,20 +886,11 @@
     body.innerHTML = "";
     
     DAYS.forEach(day => {
-      const isScratched = scratchedDays[day] === true;
-      const scratchedClass = isScratched ? "scratched" : "";
-      const isCheckedAttribute = isScratched ? "checked" : "";
-
       const wrap = document.createElement("div");
-      wrap.className = `planner-day ${scratchedClass}`;
-      wrap.id = `daycard-${day}`;
+      wrap.className = "planner-day";
       wrap.innerHTML = `
         <div class="planner-day-header">
           <span>${day}</span>
-          <label class="scratch-checkbox">
-            <input type="checkbox" ${isCheckedAttribute} onchange="toggleDayScratch('${day}', this.checked)">
-            Ispoštovano
-          </label>
         </div>
         <div class="planner-day-body"></div>`;
       
@@ -834,9 +926,8 @@
   }
 
   window.resetPlan = function() {
-    if (!confirm("Resetovati ceo nedeljni plan i statuse praćenja?")) return;
+    if (!confirm("Resetovati ceo nedeljni plan? (Kalendar tracking ostaje sačuvan)")) return;
     weeklyPlan = {};
-    scratchedDays = {}; // Čisti i tracking istoriju za tu nedelju
     saveData();
     renderPlanner();
     updateStats();
@@ -1092,7 +1183,7 @@
     let touchEndY = 0;
 
     swipeArea.addEventListener('touchstart', (e) => {
-      if (e.target.type === 'checkbox' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal') || e.target.classList.contains('btn-qty')) {
+      if (e.target.type === 'checkbox' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal') || e.target.closest('#calendarModal') || e.target.classList.contains('btn-qty')) {
         return;
       }
       touchStartX = e.changedTouches[0].screenX;
@@ -1100,7 +1191,7 @@
     }, { passive: true });
 
     swipeArea.addEventListener('touchend', (e) => {
-      if (e.target.type === 'checkbox' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal') || e.target.classList.contains('btn-qty')) {
+      if (e.target.type === 'checkbox' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT' || e.target.closest('#editModal') || e.target.closest('#calendarModal') || e.target.classList.contains('btn-qty')) {
         return;
       }
       touchEndX = e.changedTouches[0].screenX;
