@@ -8,8 +8,8 @@
   <meta name="theme-color" content="#18181b">
   <link rel="apple-touch-icon" href="icon.svg">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-web-app-capable" content="yes">
-  <meta name="apple-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
@@ -109,7 +109,6 @@
     .shopping-item.checked .item-name { text-decoration: line-through; }
     .shopping-item.checked .item-amount { text-decoration: line-through; }
 
-    /* INFO BADGE FOR PANTRY DEFRAL */
     .pantry-notice { font-size: 0.68rem; color: #16a34a; font-weight: 500; margin-top: 2px; display: inline-block; background: #f0fdf4; padding: 1px 6px; border-radius: 4px; }
 
     .total-big { font-family: 'Geist Mono', monospace; font-size: 2.5rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1; }
@@ -134,7 +133,6 @@
     .search-input-wrap input { padding-left: 2rem; }
     .search-icon { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; font-size: 0.85rem; }
 
-    /* Loading screen */
     #loadingScreen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; z-index: 999; }
     #loadingScreen .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--text); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -148,6 +146,7 @@
 </head>
 <body>
 
+<!-- Loading -->
 <div id="loadingScreen">
   <div class="spinner"></div>
   <p>Učitavanje...</p>
@@ -171,11 +170,12 @@
   <button class="tab-btn" onclick="showTab('mealsTab', this)">Jela</button>
   <button class="tab-btn" onclick="showTab('pantryTab', this)">Špajz</button>
   <button class="tab-btn" onclick="showTab('shoppingTab', this)">Kupovina</button>
-  <button class="tab-btn" onclick="showTab('statsTab', this)">Statistika</button>
+  <button class="tab-btn" onclick="showTab('statsTab', this)">Cena</button>
 </nav>
 
 <main>
 
+  <!-- PLAN TAB -->
   <div id="planTab" class="tab-content active">
     <div class="card" style="padding:1rem">
       <div class="section-header">
@@ -186,13 +186,14 @@
     </div>
   </div>
 
+  <!-- MEALS TAB -->
   <div id="mealsTab" class="tab-content">
     <div class="card">
       <span class="card-title">Dodaj jelo</span>
       <div class="form-stack">
         <input id="mealName" type="text" placeholder="Naziv jela">
-        <input id="mealPrice" type="number" placeholder="Cena (RSD)" inputmode="numeric">
-        <textarea id="mealIngredients" placeholder="Sastojci (jedan po liniji):&#10;Pirinač:100g&#10;Piletina:200g&#10;Rižolino:2kom"></textarea>
+        <!-- Izbačen input za fiksnu cenu jela -->
+        <textarea id="mealIngredients" placeholder="Sastojci (jedan po liniji):&#10;Pirinač:100g&#10;Mleko:200ml&#10;Jaja:3kom"></textarea>
         <button class="btn btn-primary btn-full" onclick="addMeal()">+ Dodaj jelo</button>
       </div>
     </div>
@@ -209,27 +210,30 @@
     </div>
   </div>
 
+  <!-- PANTRY (ŠPAJZ) TAB -->
   <div id="pantryTab" class="tab-content">
     <div class="card">
-      <span class="card-title">Dodaj u špajz / zalihe</span>
+      <span class="card-title">Dodaj u špajz / bazu namirnica</span>
       <p style="font-size:0.75rem; color:var(--muted); margin-top:-0.5rem; margin-bottom:0.75rem;">
-        Unesi namirnice koje već imaš kod kuće kako bi se automatski oduzele od liste za kupovinu.
+        Unesi pakovanje namirnice (npr. 1000g, 1l, 10kom) i njenu cenu da bi sistem računao troškove obroka.
       </p>
       <div class="form-stack">
-        <input id="pantryItemName" type="text" placeholder="Naziv namirnice (npr. Pirinač)">
-        <input id="pantryItemAmount" type="text" placeholder="Količina/Mera (npr. 500g, 2kom, 1l)">
-        <button class="btn btn-primary btn-full" onclick="addPantryItem()">+ Dodaj u špajz</button>
+        <input id="pantryItemName" type="text" placeholder="Naziv namirnice (npr. Mleko)">
+        <input id="pantryItemAmount" type="text" placeholder="Ukupna količina u pakovanju (npr. 1000ml, 10kom)">
+        <input id="pantryItemPrice" type="number" placeholder="Ukupna cena pakovanja (RSD)" inputmode="numeric">
+        <button class="btn btn-primary btn-full" onclick="addPantryItem()">+ Dodaj namirnicu</button>
       </div>
     </div>
     <div class="card">
       <div class="section-header">
-        <span class="card-title">Stanje u špajzu</span>
+        <span class="card-title">Stanje i cene namirnica</span>
         <span class="badge" id="pantryCountBadge">0</span>
       </div>
       <div class="meals-list" id="pantryList"></div>
     </div>
   </div>
 
+  <!-- SHOPPING TAB -->
   <div id="shoppingTab" class="tab-content">
     <div class="card">
       <span class="card-title">Generiši listu (Uzima u obzir špajz)</span>
@@ -251,20 +255,21 @@
     </div>
   </div>
 
+  <!-- CENA (BIVŠA STATISTIKA) TAB -->
   <div id="statsTab" class="tab-content">
     <div class="card">
-      <span class="card-title">Pregled</span>
+      <span class="card-title">Finansijski pregled</span>
       <div class="stat-grid">
         <div class="stat-block">
-          <div class="stat-label">Ukupno jela</div>
+          <div class="stat-label">Ukupno jela u bazi</div>
           <div class="stat-value" id="statMealCount">0</div>
         </div>
         <div class="stat-block">
-          <div class="stat-label">Prosečna cena</div>
+          <div class="stat-label">Prosečna cena obroka</div>
           <div class="stat-value" id="statAvgPrice">0</div>
         </div>
         <div class="stat-block" style="grid-column:1/-1">
-          <div class="stat-label">Trošak ove nedelje</div>
+          <div class="stat-label">Planirani trošak za ovu nedelju</div>
           <div class="stat-value" style="font-size:2rem" id="statWeekTotal">0 RSD</div>
         </div>
       </div>
@@ -279,7 +284,7 @@
     <h2>Izmeni jelo</h2>
     <div class="form-stack">
       <input id="editMealName" type="text" placeholder="Naziv jela">
-      <input id="editMealPrice" type="number" placeholder="Cena (RSD)" inputmode="numeric">
+      <!-- Izbačena fiksna cena iz modala -->
       <textarea id="editMealIngredients"></textarea>
     </div>
     <div class="modal-footer">
@@ -289,6 +294,7 @@
   </div>
 </div>
 
+<!-- Firebase Realtime App Script -->
 <script type="module">
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(e => console.log(e));
 
@@ -313,7 +319,7 @@
 
   let meals      = [];
   let weeklyPlan = {};
-  let pantry     = []; 
+  let pantry     = []; // { name, amount, price }
   let editingMealIndex = null;
   let saveTimeout = null;
 
@@ -381,7 +387,7 @@
     if (id === "shoppingTab") window.generateShopping();
   };
 
-  // ── HELPERS ──────────────────────────────────────────────
+  // ── HELPERS: PAMETNO RAČUNANJE CENE SASTOJAKA ─────────────
   function parseIngredients(text) {
     if (!text) return [];
     return text.split("\n").map(line => {
@@ -390,24 +396,64 @@
     }).filter(i => i.name);
   }
 
+  // Izvlači samo broj iz stringa (npr "200ml" -> 200, "1l" -> 1)
+  function parseNumberFromString(str) {
+    const num = parseFloat(str.replace(/[^0-9.]/g, ''));
+    return isNaN(num) ? 1 : num;
+  }
+
+  // Glavna matematika za cenu parcijalnog sastojka
+  function calculateIngredientPrice(ingName, ingAmountStr) {
+    const pItem = pantry.find(p => p.name.toLowerCase() === ingName.toLowerCase());
+    if (!pItem || !pItem.price) return 0;
+
+    let reqAmount = parseNumberFromString(ingAmountStr);
+    let totalAmount = parseNumberFromString(pItem.amount);
+
+    // Automatska konverzija iz Litar u Mililitar i Kilogram u Gram
+    let reqStr = ingAmountStr.toLowerCase();
+    let totStr = pItem.amount.toLowerCase();
+
+    if (reqStr.includes('ml') && (totStr.includes('l') && !totStr.includes('ml'))) {
+      totalAmount = totalAmount * 1000; // 1L -> 1000ml
+    } else if ((reqStr.includes('l') && !reqStr.includes('ml')) && totStr.includes('ml')) {
+      reqAmount = reqAmount * 1000;
+    }
+
+    if (reqStr.includes('g') && !reqStr.includes('kg') && totStr.includes('kg')) {
+      totalAmount = totalAmount * 1000; // 1kg -> 1000g
+    } else if (reqStr.includes('kg') && totStr.includes('g') && !totStr.includes('kg')) {
+      reqAmount = reqAmount * 1000;
+    }
+
+    return (pItem.price / totalAmount) * reqAmount;
+  }
+
+  // Računa ukupnu cenu celog jela na osnovu baze iz špajza
+  function getMealPrice(meal) {
+    let totalPrice = 0;
+    if (!meal.ingredients) return 0;
+    meal.ingredients.forEach(ing => {
+      totalPrice += calculateIngredientPrice(ing.name, ing.amount);
+    });
+    return Math.round(totalPrice);
+  }
+
   // ── ADD MEAL ─────────────────────────────────────────────
   window.addMeal = function() {
     const nameEl = document.getElementById("mealName");
-    const priceEl = document.getElementById("mealPrice");
     const ingEl = document.getElementById("mealIngredients");
 
     const name  = nameEl.value.trim();
-    const price = Number(priceEl.value) || 0;
     const ingredients = parseIngredients(ingEl.value);
 
     if (!name) return;
-    meals.push({ name, price, ingredients });
+    meals.push({ name, ingredients }); // Cena se više ne čuva direktno
     
     saveData();
     renderAll();
 
     nameEl.value = "";
-    priceEl.value = "";
     ingEl.value = "";
     nameEl.focus();
   };
@@ -430,7 +476,6 @@
     editingMealIndex = idx;
     const meal = meals[idx];
     document.getElementById("editMealName").value = meal.name;
-    document.getElementById("editMealPrice").value = meal.price;
     document.getElementById("editMealIngredients").value =
       meal.ingredients.map(i => `${i.name}:${i.amount}`).join("\n");
     document.getElementById("editModal").classList.add("open");
@@ -452,7 +497,6 @@
     
     meals[editingMealIndex] = {
       name: newName || oldName,
-      price: Number(document.getElementById("editMealPrice").value) || 0,
       ingredients: parseIngredients(document.getElementById("editMealIngredients").value)
     };
 
@@ -472,31 +516,35 @@
   window.addPantryItem = function() {
     const nameEl = document.getElementById("pantryItemName");
     const amountEl = document.getElementById("pantryItemAmount");
+    const priceEl = document.getElementById("pantryItemPrice");
     
     const name = nameEl.value.trim();
-    const amount = amountEl.value.trim() || "ima";
+    const amount = amountEl.value.trim() || "1kom";
+    const price = Number(priceEl.value) || 0;
 
     if (!name) return;
 
     const existingIndex = pantry.findIndex(item => item.name.toLowerCase() === name.toLowerCase());
     if (existingIndex > -1) {
       pantry[existingIndex].amount = amount;
+      pantry[existingIndex].price = price;
     } else {
-      pantry.push({ name, amount });
+      pantry.push({ name, amount, price });
     }
 
     saveData();
-    window.renderPantryList();
+    renderAll();
 
     nameEl.value = "";
     amountEl.value = "";
+    priceEl.value = "";
     nameEl.focus();
   };
 
   window.deletePantryItem = function(idx) {
     pantry.splice(idx, 1);
     saveData();
-    window.renderPantryList();
+    renderAll();
   };
 
   window.renderPantryList = function() {
@@ -505,7 +553,7 @@
     document.getElementById("pantryCountBadge").textContent = pantry.length;
 
     if (pantry.length === 0) {
-      container.innerHTML = `<div class="empty-state">Špajz je prazan.<br>Dodaj namirnice koje imaš na zalihama.</div>`;
+      container.innerHTML = `<div class="empty-state">Baza namirnica je prazna.<br>Dodaj artikle i njihove cene.</div>`;
       return;
     }
 
@@ -517,7 +565,10 @@
       div.innerHTML = `
         <div class="meal-card-info" style="display:flex; align-items:center; justify-content:space-between; padding-right:1rem;">
           <h3 style="margin-bottom:0;">${item.name}</h3>
-          <span class="price" style="font-size:0.85rem; color:var(--text); background:var(--surface); padding:2px 8px; border-radius:6px; border:1px solid var(--border);">${item.amount}</span>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <span class="badge" style="font-family:inherit;">Pakovanje: ${item.amount}</span>
+            <span class="price" style="font-size:0.85rem; color:var(--text); background:var(--surface); padding:2px 8px; border-radius:6px; border:1px solid var(--border);">${item.price} RSD</span>
+          </div>
         </div>
         <div class="meal-card-actions">
           <button class="btn btn-danger" onclick="deletePantryItem(${idx})" style="padding: 4px 8px;">✕</button>
@@ -541,12 +592,13 @@
     container.innerHTML = "";
     filtered.forEach(meal => {
       const realIdx = meals.indexOf(meal);
+      const calculatedPrice = getMealPrice(meal); // Dinamički računa cenu za prikaz
       const div = document.createElement("div");
       div.className = "meal-card";
       div.innerHTML = `
         <div class="meal-card-info">
           <h3>${meal.name}</h3>
-          <span class="price">${meal.price} RSD</span>
+          <span class="price">${calculatedPrice} RSD (dinamički)</span>
           ${meal.ingredients.length ? `<div class="ingredients">${meal.ingredients.map(i=>`${i.name} · ${i.amount}`).join("<br>")}</div>` : ""}
         </div>
         <div class="meal-card-actions">
@@ -628,7 +680,7 @@
         if (!meal) return;
 
         if (!daysLimit || daysToProcess.includes(day)) {
-          total += meal.price;
+          total += getMealPrice(meal); // Koristi dinamičku cenu jela
           meal.ingredients.forEach(i => {
             if (!shoppingMap[i.name]) shoppingMap[i.name] = { amounts: [], inPantry: false, pantryAmount: "" };
             if (i.amount) shoppingMap[i.name].amounts.push(i.amount);
@@ -704,10 +756,10 @@
     container.textContent = `${all - checked} / ${all} stavki`;
   }
 
-  // ── STATS ────────────────────────────────────────────────
+  // ── CENA TAB LOGIC (STARI STATS) ───────────────────────────
   function updateStats() {
     let totalMealsPrice = 0;
-    meals.forEach(m => totalMealsPrice += (m.price || 0));
+    meals.forEach(m => totalMealsPrice += getMealPrice(m));
     const avgPrice = meals.length ? Math.round(totalMealsPrice / meals.length) : 0;
 
     let currentWeekTotal = 0;
@@ -716,7 +768,7 @@
         const mName = weeklyPlan[day]?.[type];
         if (mName) {
           const meal = meals.find(m => m.name === mName);
-          if (meal) currentWeekTotal += (meal.price || 0);
+          if (meal) currentWeekTotal += getMealPrice(meal);
         }
       });
     });
