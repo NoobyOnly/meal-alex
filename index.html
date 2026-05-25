@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Aleksandra Planner</title>
+  <title>Aleksandra Ivković</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#18181b">
   <link rel="apple-touch-icon" href="icon.svg">
@@ -71,6 +71,11 @@
     input:focus, textarea:focus, select:focus { border-color: var(--text); box-shadow: 0 0 0 3px rgba(24,24,27,0.07); }
     textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
     .form-stack { display: flex; flex-direction: column; gap: 0.65rem; }
+
+    /* Stilovi za izbor tipa obroka */
+    .meal-type-selector { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin: 0.25rem 0; }
+    .type-checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; background: var(--bg); padding: 0.6rem; border-radius: var(--radius-sm); border: 1px solid var(--border); cursor: pointer; user-select: none; font-weight: 500; }
+    .type-checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--text); cursor: pointer; }
 
     .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.1rem; border-radius: var(--radius-sm); border: 1px solid var(--border); font-family: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.15s; background: var(--surface); color: var(--text); gap: 6px; }
     .btn:active { transform: scale(0.97); }
@@ -154,12 +159,10 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     #loadingScreen p { font-size: 0.85rem; color: var(--muted); }
 
-    /* LEBDEĆE DUGME ZA KALENDAR (FAB) */
     .fab-cal { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 56px; height: 56px; background: var(--text); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,0.2); cursor: pointer; z-index: 90; transition: transform 0.15s; }
     .fab-cal:active { transform: scale(0.92); }
     .fab-cal svg { width: 24px; height: 24px; fill: #ffffff; }
 
-    /* KALENDAR MREŽA I STILOVI */
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; margin-top: 0.5rem; }
     .cal-day-name { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; padding-bottom: 4px; }
     
@@ -167,11 +170,9 @@
     .cal-cell.empty { background: transparent; cursor: default; }
     .cal-cell.today { border-color: var(--text); font-weight: 600; }
     
-    /* Scratch-off efekat (grebanje) */
     .cal-cell.scratched { background: #f0fdf4; color: #16a34a; }
     .cal-cell.scratched::after { content: ''; position: absolute; inset: 4px; border: 1.5px dashed #16a34a; border-radius: 6px; opacity: 0.5; animation: scratchIn 0.25s ease-out forwards; }
     
-    /* Tekstualna linija grebanja */
     .scratch-line { position: absolute; width: 0%; height: 2px; background: #16a34a; top: 50%; left: 10%; transform: translateY(-50%) rotate(-10deg); transition: width 0.2s ease-in-out; pointer-events: none; }
     .cal-cell.scratched .scratch-line { width: 80%; }
 
@@ -231,6 +232,15 @@
       <span class="card-title">Dodaj jelo</span>
       <div class="form-stack">
         <input id="mealName" type="text" placeholder="Naziv jela">
+        
+        <div style="font-size: 0.75rem; color: var(--muted); font-weight: 600; margin-top: 2px;">OVO JELO JE ZA:</div>
+        <div class="meal-type-selector">
+          <label class="type-checkbox-label"><input type="checkbox" id="addTypeDorucak" value="Doručak"> Doručak</label>
+          <label class="type-checkbox-label"><input type="checkbox" id="addTypeUzina" value="Užina"> Užina</label>
+          <label class="type-checkbox-label"><input type="checkbox" id="addTypeRucak" value="Ručak"> Ručak</label>
+          <label class="type-checkbox-label"><input type="checkbox" id="addTypeVecera" value="Večera"> Večera</label>
+        </div>
+
         <textarea id="mealIngredients" placeholder="Sastojci (jedan po liniji):&#10;Pirinač:100g&#10;Mleko:200ml&#10;Jaja:3kom"></textarea>
         <button class="btn btn-primary btn-full" onclick="addMeal()">+ Dodaj jelo</button>
       </div>
@@ -334,6 +344,15 @@
     
     <div class="form-stack" id="modalMealFields">
       <input id="editMealName" type="text" placeholder="Naziv jela">
+      
+      <div style="font-size: 0.75rem; color: var(--muted); font-weight: 600; margin-top: 2px;">OVO JELO JE ZA:</div>
+      <div class="meal-type-selector">
+        <label class="type-checkbox-label"><input type="checkbox" id="editTypeDorucak" value="Doručak"> Doručak</label>
+        <label class="type-checkbox-label"><input type="checkbox" id="editTypeUzina" value="Užina"> Užina</label>
+        <label class="type-checkbox-label"><input type="checkbox" id="editTypeRucak" value="Ručak"> Ručak</label>
+        <label class="type-checkbox-label"><input type="checkbox" id="editTypeVecera" value="Večera"> Večera</label>
+      </div>
+
       <textarea id="editMealIngredients"></textarea>
     </div>
 
@@ -360,7 +379,6 @@
 <div class="modal-overlay" id="calendarModal" onclick="handleCalendarModalClick(event)">
   <div class="modal" style="max-width: 420px;">
     <div class="modal-handle"></div>
-    
     <h2 id="calModalTitle" style="margin-bottom: 0.25rem;"></h2>
     <p style="text-align:center; font-size:0.75rem; color:var(--muted); margin-bottom:1rem;">Tapni na dan da ga izgrebeš/poništiš</p>
     
@@ -373,9 +391,7 @@
       <div class="cal-day-name">S</div>
       <div class="cal-day-name">N</div>
     </div>
-    
     <div class="cal-grid" id="calendarDaysGrid"></div>
-
     <div class="modal-footer" style="justify-content: center; margin-top: 1.25rem;">
       <button class="btn btn-primary" onclick="closeCalendarModal()">Zatvori</button>
     </div>
@@ -415,7 +431,6 @@
   let editingIndex = null;
   let saveTimeout = null;
 
-  // Praćenje trenutno izabranog meseca unutar kalendara
   let currentDisplayedMonth = new Date().getMonth();
   let currentDisplayedYear = new Date().getFullYear();
 
@@ -558,14 +573,31 @@
     const name  = nameEl.value.trim();
     const ingredients = parseIngredients(ingEl.value);
 
+    // Kupljenje izabranih tipova obroka
+    const allowedTypes = [];
+    if (document.getElementById("addTypeDorucak").checked) allowedTypes.push("Doručak");
+    if (document.getElementById("addTypeUzina").checked) allowedTypes.push("Užina");
+    if (document.getElementById("addTypeRucak").checked) allowedTypes.push("Ručak");
+    if (document.getElementById("addTypeVecera").checked) allowedTypes.push("Večera");
+
     if (!name) return;
-    meals.push({ name, ingredients });
+
+    meals.push({ 
+      name, 
+      ingredients,
+      types: allowedTypes.length > 0 ? allowedTypes : [...MEAL_TYPES] // ako ništa ne čekira, po defaultu može svuda
+    });
     
     saveData();
     renderAll();
 
+    // Reset forme
     nameEl.value = "";
     ingEl.value = "";
+    document.getElementById("addTypeDorucak").checked = false;
+    document.getElementById("addTypeUzina").checked = false;
+    document.getElementById("addTypeRucak").checked = false;
+    document.getElementById("addTypeVecera").checked = false;
     nameEl.focus();
   };
 
@@ -581,6 +613,13 @@
     document.getElementById("editMealName").value = meal.name;
     document.getElementById("editMealIngredients").value =
       meal.ingredients.map(i => `${i.name}:${i.amount}`).join("\n");
+      
+    // Postavljanje checkbox-ova u modalu na osnovu sačuvanih tipova obroka
+    const mealTypes = meal.types || [...MEAL_TYPES];
+    document.getElementById("editTypeDorucak").checked = mealTypes.includes("Doručak");
+    document.getElementById("editTypeUzina").checked = mealTypes.includes("Užina");
+    document.getElementById("editTypeRucak").checked = mealTypes.includes("Ručak");
+    document.getElementById("editTypeVecera").checked = mealTypes.includes("Večera");
       
     document.getElementById("editModal").classList.add("open");
   };
@@ -619,9 +658,16 @@
       const oldName = meals[editingIndex].name;
       const newName = document.getElementById("editMealName").value.trim();
       
+      const allowedTypes = [];
+      if (document.getElementById("editTypeDorucak").checked) allowedTypes.push("Doručak");
+      if (document.getElementById("editTypeUzina").checked) allowedTypes.push("Užina");
+      if (document.getElementById("editTypeRucak").checked) allowedTypes.push("Ručak");
+      if (document.getElementById("editTypeVecera").checked) allowedTypes.push("Večera");
+
       meals[editingIndex] = {
         name: newName || oldName,
-        ingredients: parseIngredients(document.getElementById("editMealIngredients").value)
+        ingredients: parseIngredients(document.getElementById("editMealIngredients").value),
+        types: allowedTypes.length > 0 ? allowedTypes : [...MEAL_TYPES]
       };
 
       if (newName && newName !== oldName) {
@@ -795,12 +841,17 @@
     filtered.forEach(meal => {
       const realIdx = meals.indexOf(meal);
       const calculatedPrice = getMealPrice(meal);
+      const mealTypes = meal.types || [...MEAL_TYPES];
+      
       const div = document.createElement("div");
       div.className = "meal-card";
       div.innerHTML = `
         <div class="meal-card-info">
           <h3>${meal.name}</h3>
           <span class="price">${calculatedPrice} RSD (dinamički)</span>
+          <div style="margin: 4px 0 6px 0; display:flex; gap:4px; flex-wrap:wrap;">
+            ${mealTypes.map(t => `<span class="badge" style="font-size:0.6rem; font-weight:500; background:var(--surface);">${t}</span>`).join("")}
+          </div>
           ${meal.ingredients.length ? `<div class="ingredients">${meal.ingredients.map(i=>`${i.name} · ${i.amount}`).join("<br>")}</div>` : ""}
         </div>
         <div class="meal-card-actions">
@@ -810,7 +861,6 @@
     });
   };
 
-  // KALENDAR NAVIGACIJA KROZ MESECE
   window.openCalendarModal = function() {
     const now = new Date();
     currentDisplayedMonth = now.getMonth();
@@ -848,7 +898,6 @@
     grid.innerHTML = "";
     const months = ["Januar","Februar","Mart","April","Maj","Jun","Jul","Avgust","Septembar","Oktobar","Novembar","Decembar"];
     
-    // Ubacivanje strelica za listanje meseci direktno u header modala
     titleEl.innerHTML = `
       <div style="display:flex; align-items:center; justify-content:space-between; width:100%; padding:0 5px;">
         <button class="btn btn-ghost" style="font-size:1.3rem; padding:4px 12px; font-weight:600; color:var(--text);" onclick="changeMonth(-1)">‹</button>
@@ -865,14 +914,12 @@
 
     const daysInMonth = new Date(currentDisplayedYear, currentDisplayedMonth + 1, 0).getDate();
 
-    // Prazna polja
     for (let i = 0; i < firstDayIndex; i++) {
       const emptyCell = document.createElement("div");
       emptyCell.className = "cal-cell empty";
       grid.appendChild(emptyCell);
     }
 
-    // Dani u mesecu koji se trenutno posmatra
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${currentDisplayedYear}-${String(currentDisplayedMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       const isScratched = scratchedDates[dateStr] === true;
@@ -922,8 +969,15 @@
         tag.textContent = type;
         
         const sel = document.createElement("select");
-        sel.innerHTML = `<option value="">—</option>` +
-          meals.map(m => `<option value="${encodeURIComponent(m.name)}">${m.name}</option>`).join("");
+        sel.innerHTML = `<option value="">—</option>`;
+        
+        // PAMETNI FILTER: Ovde prikazujemo samo jela koja u sebi sadrže trenutni tip obroka (npr. samo Doručak)
+        meals.forEach(m => {
+          const allowedTypes = m.types || [...MEAL_TYPES];
+          if (allowedTypes.includes(type)) {
+            sel.innerHTML += `<option value="${encodeURIComponent(m.name)}">${m.name}</option>`;
+          }
+        });
         
         sel.value = weeklyPlan[day]?.[type] ? encodeURIComponent(weeklyPlan[day][type]) : "";
         
@@ -967,7 +1021,7 @@
       MEAL_TYPES.forEach(type => {
         const mealName = weeklyPlan[day]?.[type];
         if (!mealName) return;
-        const meal = meals.find(m => m.name === mName);
+        const meal = meals.find(m => m.name === mealName);
         if (!meal) return;
 
         if (!daysLimit || daysToProcess.includes(day)) {
