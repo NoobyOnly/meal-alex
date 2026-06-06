@@ -470,8 +470,8 @@
       <input id="editPantryAmount" type="text" placeholder="Količina pakovanja">
       <input id="editPantryPrice" type="number" placeholder="Cena (RSD)" inputmode="numeric">
       <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:0.85rem;color:var(--muted)">Trenutne zalihe:</span>
-        <input id="editPantryCurrentStock" type="number" style="width:90px;" placeholder="Npr. 5">
+        <span style="font-size:0.85rem;color:var(--muted)">Broj pakovanja na stanju:</span>
+        <input id="editPantryCurrentStock" type="number" style="width:90px;" placeholder="0">
       </div>
     </div>
 
@@ -699,6 +699,39 @@
   // Collator za srpsku azbuku / abeceda
   const srCollator = new Intl.Collator("sr", { sensitivity: "base" });
 
+  // ── LEMANTIZACIJA (srpski nastavci) ───────────────────────
+  // Uklanjamo česte padežne/množinske nastavke i dobijamo "koren"
+  // Sortiramo nastavke od najdužeg ka najkraćem da ne odsečemo previše
+  const SR_SUFFIXES = [
+    "ima","ama","jem","jem","oga","ega","ome","emu","oju",
+    "om","em","im","ih","oj","om","ju","uh",
+    "om","ah","uh",
+    "a","e","i","u","o"
+  ];
+
+  function normalizeName(str) {
+    // lowercase + ukloni dijakritiku za poređenje
+    let s = str.toLowerCase().trim();
+    // Normalizuj č->c, š->s, ž->z, ć->c, đ->d za poređenje korena
+    s = s.replace(/č/g,"c").replace(/š/g,"s").replace(/ž/g,"z")
+         .replace(/ć/g,"c").replace(/đ/g,"d").replace(/dž/g,"dz");
+    for (const suf of SR_SUFFIXES) {
+      if (s.length > suf.length + 2 && s.endsWith(suf)) {
+        return s.slice(0, s.length - suf.length);
+      }
+    }
+    return s;
+  }
+
+  // Traži postojeći ključ u mapi čiji normalizovani oblik odgovara novom imenu
+  function findMatchingKey(map, newName) {
+    const normNew = normalizeName(newName);
+    for (const key of Object.keys(map)) {
+      if (normalizeName(key) === normNew) return key;
+    }
+    return null;
+  }
+
   function renderAll() {
     renderPlanner();
     renderMealsList();
@@ -802,7 +835,7 @@
       pantry[ei].amount = amount; pantry[ei].price = price;
       if (pantry[ei].currentStock === undefined) pantry[ei].currentStock = parseNum(amount);
     } else {
-      pantry.push({ name, amount, price, inStock: false, currentStock: parseNum(amount) });
+      pantry.push({ name, amount, price, inStock: false, currentStock: 0 });
     }
     saveData(); renderAll();
     nameEl.value = ""; amountEl.value = ""; priceEl.value = ""; nameEl.focus();
@@ -818,9 +851,6 @@
     }
     container.innerHTML = "";
     pantry.forEach((item, idx) => {
-      const cur = item.currentStock !== undefined ? item.currentStock : parseNum(item.amount);
-      const unit = String(item.amount).replace(/[0-9.]/g, "").trim() || "";
-      const stockDisplay = unit ? `${cur}${unit}` : `${cur}`;
       const div = document.createElement("div");
       div.className = "meal-card";
       div.style.padding = "0.6rem 1rem";
@@ -828,15 +858,10 @@
         <div class="meal-card-info" style="display:flex;flex-direction:column;gap:4px;padding-right:0.5rem">
           <h3>${item.name}</h3>
           <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap">
-            <span class="badge" style="font-family:inherit;font-weight:500;background:#f1f5f9">Na stanju: ${stockDisplay}</span>
-            <span class="price" style="font-size:0.78rem;color:var(--text);background:var(--surface);padding:1px 6px;border-radius:4px;border:1px solid var(--border)">${item.price} RSD</span>
+            ${item.price > 0 ? `<span class="price" style="font-family:'Geist Mono',monospace;font-size:0.75rem;color:var(--muted)">${item.price} RSD</span>` : ""}
           </div>
         </div>
-        <div class="meal-card-actions" style="gap:5px">
-          <div style="display:flex;gap:3px;align-items:center;margin-right:4px">
-            <button class="btn-qty" onclick="changePantryQty(${idx},-1)">–</button>
-            <button class="btn-qty" onclick="changePantryQty(${idx},1)">+</button>
-          </div>
+        <div class="meal-card-actions" style="gap:8px">
           <label class="pantry-status-check ${item.inStock ? 'has-stock' : ''}">
             <input type="checkbox" ${item.inStock ? "checked" : ""} onchange="togglePantryStock(${idx},this.checked)">
             Imam
@@ -849,12 +874,12 @@
 
   window.togglePantryStock = function(idx, checked) {
     pantry[idx].inStock = checked;
-    pantry[idx].currentStock = checked ? parseNum(pantry[idx].amount) : 0;
+    pantry[idx].currentStock = checked ? 1 : 0;
     saveData(); generateShopping(); renderPantryList();
   };
 
   window.changePantryQty = function(idx, change) {
-    if (pantry[idx].currentStock === undefined) pantry[idx].currentStock = parseNum(pantry[idx].amount);
+    if (pantry[idx].currentStock === undefined) pantry[idx].currentStock = 0;
     pantry[idx].currentStock = Math.max(0, pantry[idx].currentStock + change);
     pantry[idx].inStock = pantry[idx].currentStock > 0;
     saveData(); renderPantryList(); generateShopping();
@@ -869,7 +894,7 @@
     document.getElementById("editPantryName").value = item.name;
     document.getElementById("editPantryAmount").value = item.amount;
     document.getElementById("editPantryPrice").value = item.price;
-    document.getElementById("editPantryCurrentStock").value = item.currentStock !== undefined ? item.currentStock : parseNum(item.amount);
+    document.getElementById("editPantryCurrentStock").value = item.currentStock !== undefined ? item.currentStock : 0;
     document.getElementById("editModal").classList.add("open");
   };
 
@@ -977,14 +1002,16 @@
         if (!meal) return;
         total += getMealPrice(meal);
         meal.ingredients.forEach(i => {
-          if (!shoppingMap[i.name]) shoppingMap[i.name] = { amounts: [], inPantryAndStocked: false };
-          if (i.amount) shoppingMap[i.name].amounts.push(i.amount);
+          const existingKey = findMatchingKey(shoppingMap, i.name);
+          const key = existingKey || i.name;
+          if (!shoppingMap[key]) shoppingMap[key] = { amounts: [], inPantryAndStocked: false };
+          if (i.amount) shoppingMap[key].amounts.push(i.amount);
         });
       });
     });
 
     pantry.forEach(p => {
-      const key = Object.keys(shoppingMap).find(k => k.toLowerCase() === p.name.toLowerCase());
+      const key = Object.keys(shoppingMap).find(k => k.toLowerCase() === p.name.toLowerCase() || normalizeName(k) === normalizeName(p.name));
       if (key && p.inStock && (p.currentStock === undefined || p.currentStock > 0)) {
         shoppingMap[key].inPantryAndStocked = true;
       }
