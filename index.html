@@ -1,1008 +1,910 @@
 <!DOCTYPE html>
 <html lang="sr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>Aleksandra Ivković</title>
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#18181b">
-  <link rel="apple-touch-icon" href="icon.svg">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Meal & Pantry Planner</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
+    /* Osnovni stilovi kako bi aplikacija izgledala moderno i funkcionalno */
     :root {
-      --bg: #f7f6f3; --surface: #ffffff; --border: #e8e4de;
-      --text: #18181b; --muted: #71717a; --radius: 14px; --radius-sm: 9px;
-      --dorucak: #fef3c7; --dorucak-text: #92400e;
-      --uzina:   #ede9fe; --uzina-text:   #5b21b6;
-      --rucak:   #dcfce7; --rucak-text:   #166534;
-      --vecera:  #fee2e2; --vecera-text:  #991b1b;
+      --bg-color: #f4f7f6;
+      --card-bg: #ffffff;
+      --primary: #2ecc71;
+      --primary-dark: #27ae60;
+      --text: #333333;
+      --text-muted: #7f8c8d;
+      --border: #e2e8f0;
     }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text); padding-bottom: 70px; }
+    
+    header { background: #fff; padding: 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+    .header-pills { display: flex; gap: 8px; }
+    .pill { background: #edf2f7; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; color: var(--text-muted); }
+    .pill.sync { display: flex; align-items: center; gap: 6px; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+    .sync-dot.synced { background: #2ecc71; }
+    .sync-dot.syncing { background: #3498db; animation: blink 1s infinite; }
+    .sync-dot.error { background: #e74c3c; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-    body { font-family: 'Geist', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 5rem; overflow-x: hidden; }
+    /* Navigacija */
+    .nav-tabs { display: flex; background: #fff; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn { flex: 1; min-width: 90px; text-align: center; padding: 15px 5px; border: none; background: none; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 20; }
-    .header-left { display: flex; align-items: center; gap: 10px; }
-    .logo-dot { width: 28px; height: 28px; background: var(--text); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
-    .logo-dot svg { width: 16px; height: 16px; fill: white; }
-    header h1 { font-size: 1rem; font-weight: 600; letter-spacing: -0.02em; }
-    .info-pills { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-    .week-pill { font-family: 'Geist Mono', monospace; font-size: 0.68rem; color: var(--muted); background: var(--bg); border: 1px solid var(--border); padding: 4px 10px; border-radius: 100px; white-space: nowrap; }
-    .date-pill { font-size: 0.68rem; color: var(--muted); font-weight: 500; }
+    /* Sadržaj i animacije */
+    .main-container { position: relative; width: 100%; overflow: hidden; }
+    .tab-content { display: none; width: 100%; padding: 15px; min-height: calc(100vh - 180px); }
+    .tab-content.active { display: block; }
+    
+    .slide-in-right { animation: slideInRight 0.25s ease-out; }
+    .slide-in-left { animation: slideInLeft 0.25s ease-out; }
+    @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes slideInLeft { from { transform: translateX(-100%); } to { transform: translateX(0); } }
 
-    .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #d1d5db; display: inline-block; margin-right: 4px; transition: background 0.3s; }
-    .sync-dot.syncing { background: #f59e0b; animation: pulse 1s infinite; }
-    .sync-dot.synced  { background: #22c55e; }
-    .sync-dot.error   { background: #ef4444; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-    .sync-label { font-size: 0.68rem; color: var(--muted); display: flex; align-items: center; }
+    /* Forme i kartice */
+    .form-group { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; }
+    .form-row { display: flex; gap: 10px; }
+    .form-row input { flex: 1; }
+    input, select, textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: #f8fafc; }
+    input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); background: #fff; }
+    
+    .btn { background: var(--primary); color: #fff; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: background 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn:hover { background: var(--primary-dark); }
+    .btn-secondary { background: #64748b; }
+    .btn-secondary:hover { background: #475569; }
+    .btn-danger { background: #e74c3c; }
+    .btn-danger:hover { background: #c0392b; }
+    
+    .cat-selector { display: flex; gap: 5px; }
+    .cat-btn { flex: 1; padding: 8px 5px; border: 1px solid var(--border); background: #fff; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; text-align: center; }
+    .cat-btn.sel-D { background: #ffeaa7; border-color: #f1c40f; color: #b7950b; }
+    .cat-btn.sel-U { background: #fab1a0; border-color: #e17055; color: #d35400; }
+    .cat-btn.sel-R { background: #55efc4; border-color: #00b894; color: #0e6251; }
+    .cat-btn.sel-V { background: #a29bfe; border-color: #6c5ce7; color: #4a235a; }
 
-    nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; scrollbar-width: none; padding: 0 1rem; position: sticky; top: 61px; z-index: 19; }
-    nav::-webkit-scrollbar { display: none; }
-    .tab-btn { flex-shrink: 0; padding: 0.75rem 1rem; border: none; background: transparent; font-family: inherit; font-size: 0.82rem; font-weight: 400; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
-    .tab-btn.active { color: var(--text); font-weight: 600; border-bottom-color: var(--text); }
+    .search-bar { margin-bottom: 15px; }
+    .list-container { display: flex; flex-direction: column; gap: 10px; }
+    
+    .meal-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .meal-card-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .meal-card-info h3 { font-size: 16px; font-weight: 600; }
+    .meal-card-info .ingredients { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+    .meal-card-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 80px; }
+    
+    .meal-cat-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; width: max-content; text-transform: uppercase; }
+    .tag-dorucak { background: #fff9db; color: #f08c00; }
+    .tag-uzina { background: #fff0f6; color: #d6336c; }
+    .tag-rucak { background: #e6fcf5; color: #0ca678; }
+    .tag-vecera { background: #f3f0ff; color: #748ffc; }
 
-    main { padding: 1.25rem; max-width: 680px; margin: 0 auto; }
-    .tab-content { display: none; flex-direction: column; gap: 1rem; opacity: 0; }
-    .tab-content.active { display: flex; opacity: 1; }
-    .slide-in-right { animation: slideInRight 0.25s cubic-bezier(0.4,0,0.2,1) forwards; }
-    .slide-in-left  { animation: slideInLeft  0.25s cubic-bezier(0.4,0,0.2,1) forwards; }
-    @keyframes slideInRight { from { transform:translateX(30px);opacity:0; } to { transform:translateX(0);opacity:1; } }
-    @keyframes slideInLeft  { from { transform:translateX(-30px);opacity:0;} to { transform:translateX(0);opacity:1; } }
+    .price { font-size: 14px; font-weight: bold; color: #2c3e50; }
+    .btn-edit { padding: 4px 8px; font-size: 12px; background: #edf2f7; color: #4a5568; }
+    .btn-edit:hover { background: #e2e8f0; }
 
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; }
-    .card-title { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 1rem; display: block; }
-
-    input, textarea, select { width: 100%; font-family: inherit; font-size: 0.9rem; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.65rem 0.9rem; color: var(--text); background: var(--bg); transition: border-color 0.15s, box-shadow 0.15s; outline: none; -webkit-appearance: none; }
-    input:focus, textarea:focus, select:focus { border-color: var(--text); box-shadow: 0 0 0 3px rgba(24,24,27,0.07); }
-    textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
-    .form-stack { display: flex; flex-direction: column; gap: 0.65rem; }
-
-    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.7rem 1.1rem; border-radius: var(--radius-sm); border: 1px solid var(--border); font-family: inherit; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: all 0.15s; background: var(--surface); color: var(--text); gap: 6px; }
-    .btn:active { transform: scale(0.97); }
-    .btn-primary { background: var(--text); color: #fff; border-color: var(--text); }
-    .btn-primary:hover { opacity: 0.88; }
-    .btn-ghost { background: transparent; border-color: transparent; color: var(--muted); font-size: 0.78rem; padding: 5px 8px; }
-    .btn-ghost:hover { background: var(--bg); color: var(--text); }
-    .btn-danger { background: #fff1f2; color: #be123c; border-color: #fecdd3; font-size: 0.78rem; padding: 5px 10px; }
-    .btn-edit { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; font-size: 0.78rem; padding: 5px 10px; }
-    .btn-full { width: 100%; }
-    .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-    .btn-qty { width: 28px; height: 28px; min-width: 28px; display: inline-flex; align-items: center; justify-content: center; padding: 0; font-size: 1rem; font-weight: 600; border-radius: 6px; background: var(--surface); border: 1px solid var(--border); cursor: pointer; user-select: none; }
-    .btn-qty:active { background: var(--bg); }
-
-    .badge { font-family: 'Geist Mono', monospace; font-size: 0.65rem; background: var(--bg); border: 1px solid var(--border); border-radius: 100px; padding: 2px 7px; color: var(--muted); }
-    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
-    .section-header .card-title { margin-bottom: 0; }
-
-    .meals-list { display: flex; flex-direction: column; gap: 0.6rem; }
-    .meal-card { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.9rem 1rem; background: var(--bg); display: flex; justify-content: space-between; align-items: flex-start; gap: 0.75rem; }
-    .meal-card-info { flex: 1; min-width: 0; }
-    .meal-card h3 { font-size: 0.9rem; font-weight: 600; margin-bottom: 2px; }
-    .meal-card .price { font-family: 'Geist Mono', monospace; font-size: 0.75rem; color: var(--muted); }
-    .meal-card .ingredients { font-size: 0.75rem; color: var(--muted); margin-top: 5px; line-height: 1.7; }
-    .meal-card-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
-
-    /* Kategorija dugmad */
-    .cat-picker { display: flex; gap: 6px; }
-    .cat-btn { flex: 1; padding: 7px 4px; border-radius: var(--radius-sm); border: 1px solid var(--border); font-family: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; background: var(--bg); color: var(--muted); transition: all 0.15s; text-align: center; }
-    .cat-btn:active { transform: scale(0.96); }
-    .cat-btn.sel-D { background: var(--dorucak); color: var(--dorucak-text); border-color: #d97706; }
-    .cat-btn.sel-U { background: var(--uzina);   color: var(--uzina-text);   border-color: #7c3aed; }
-    .cat-btn.sel-R { background: var(--rucak);   color: var(--rucak-text);   border-color: #15803d; }
-    .cat-btn.sel-V { background: var(--vecera);  color: var(--vecera-text);  border-color: #b91c1c; }
-    .meal-cat-tag { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 2px 7px; border-radius: 100px; margin-top: 3px; }
-    .pantry-status-check { display: flex; align-items: center; gap: 6px; font-size: 0.75rem; font-weight: 500; color: var(--muted); cursor: pointer; background: var(--surface); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border); user-select: none; }
-    .pantry-status-check input { width: 14px; height: 14px; cursor: pointer; accent-color: #16a34a; margin: 0; padding: 0; }
-    .pantry-status-check.has-stock { border-color: #bbf7d0; color: #15803d; background: #f0fdf4; }
-
-    .planner-day { border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--surface); }
-    .planner-day-header { padding: 0.6rem 0.9rem; font-size: 0.78rem; font-weight: 600; background: var(--bg); border-bottom: 1px solid var(--border); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-    .planner-row { display: flex; align-items: center; padding: 0.5rem 0.9rem; border-bottom: 1px solid var(--border); gap: 0.75rem; }
+    /* Planer sekcija */
+    .planner-day { background: #fff; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 15px; overflow: hidden; }
+    .planner-day-header { background: #f8fafc; padding: 10px 15px; font-weight: bold; border-bottom: 1px solid var(--border); color: #4a5568; }
+    .planner-row { padding: 12px 15px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); }
     .planner-row:last-child { border-bottom: none; }
-    .meal-type-tag { flex-shrink: 0; font-size: 0.7rem; font-weight: 600; padding: 3px 9px; border-radius: 100px; min-width: 62px; text-align: center; }
-    .tag-dorucak { background: var(--dorucak); color: var(--dorucak-text); }
-    .tag-uzina   { background: var(--uzina);   color: var(--uzina-text); }
-    .tag-rucak   { background: var(--rucak);   color: var(--rucak-text); }
-    .tag-vecera  { background: var(--vecera);  color: var(--vecera-text); }
-    .planner-row select { flex: 1; background: transparent; border: 1px solid transparent; padding: 4px 6px; font-size: 0.84rem; border-radius: 6px; color: var(--text); -webkit-appearance: auto; appearance: auto; }
-    .planner-row select:hover { border-color: var(--border); background: var(--bg); }
-    .planner-row select:focus { border-color: var(--text); background: var(--bg); box-shadow: none; }
+    .planner-row .meal-type-tag { width: 70px; text-align: center; font-size: 11px; padding: 4px; border-radius: 6px; font-weight: bold; }
+    .planner-row select { flex: 1; padding: 8px; }
 
-    .shopping-item { display: flex; align-items: center; padding: 0.8rem 0; border-bottom: 1px solid var(--border); gap: 0.75rem; }
-    .shopping-item:last-child { border-bottom: none; }
-    .shopping-item input[type=checkbox] { width: 18px; height: 18px; flex-shrink: 0; accent-color: var(--text); cursor: pointer; }
-    .shopping-item label { display: flex; flex-direction: column; cursor: pointer; flex: 1; }
-    .item-name { font-size: 0.88rem; font-weight: 500; }
-    .item-amount { font-family: 'Geist Mono', monospace; font-size: 0.72rem; color: var(--muted); margin-top: 1px; }
-    .shopping-item.checked { opacity: 0.45; }
+    /* Lista za kupovinu */
+    .shopping-meta { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 15px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; }
+    .shopping-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .shopping-item { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 12px 15px; display: flex; align-items: center; gap: 12px; }
+    .shopping-item input[type="checkbox"] { width: 20px; height: 20px; border-radius: 6px; cursor: pointer; flex-shrink: 0; }
+    .shopping-item label { display: flex; justify-content: space-between; width: 100%; cursor: pointer; align-items: center; }
+    .shopping-item .item-name { font-size: 15px; font-weight: 500; }
+    .shopping-item .item-amount { font-size: 14px; color: var(--text-muted); font-weight: bold; background: #f1f5f9; padding: 2px 8px; border-radius: 6px; }
+    .shopping-item.checked { opacity: 0.5; }
     .shopping-item.checked .item-name { text-decoration: line-through; }
-    .shopping-item.checked .item-amount { text-decoration: line-through; }
-    .pantry-notice { font-size: 0.68rem; color: #16a34a; font-weight: 500; margin-top: 2px; display: inline-block; background: #f0fdf4; padding: 1px 6px; border-radius: 4px; }
 
-    .total-big { font-family: 'Geist Mono', monospace; font-size: 2.5rem; font-weight: 500; letter-spacing: -0.03em; line-height: 1; }
-    .total-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
-    .divider { height: 1px; background: var(--border); margin: 1rem 0; }
+    /* Statistika */
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .stat-box { background: #fff; border: 1px solid var(--border); padding: 15px; border-radius: 12px; text-align: center; }
+    .stat-box h4 { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; }
+    .stat-box .val { font-size: 20px; font-weight: bold; color: #2d3748; }
 
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .stat-block { padding: 1rem; background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border); }
-    .stat-block .stat-label { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 0.4rem; }
-    .stat-block .stat-value { font-family: 'Geist Mono', monospace; font-size: 1.5rem; font-weight: 500; }
-
-    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; align-items: flex-end; justify-content: center; }
+    /* Modali */
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100; padding: 15px; }
     .modal-overlay.open { display: flex; }
-    .modal { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; padding: 1.5rem 1.25rem; width: 100%; max-width: 520px; border-top: 1px solid var(--border); animation: slideUp 0.22s ease; }
-    @keyframes slideUp { from { transform:translateY(30px);opacity:0; } to { transform:translateY(0);opacity:1; } }
-    .modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 1.25rem; }
-    .modal h2 { font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem; }
-    .modal-footer { display: flex; justify-content: flex-end; gap: 0.6rem; margin-top: 1rem; }
+    .modal-content { background: #fff; width: 100%; max-width: 450px; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
+    .modal-body { display: flex; flex-direction: column; gap: 12px; }
+    .modal-footer { display: flex; gap: 10px; margin-top: 10px; }
+    .modal-footer .btn { flex: 1; }
 
-    .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 0.85rem; line-height: 1.6; }
-    .search-input-wrap { position: relative; margin-bottom: 0.9rem; }
-    .search-input-wrap input { padding-left: 2rem; }
-    .search-icon { position: absolute; left: 0.7rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+    /* Kalendar stilovi */
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 10px; }
+    .cal-header-cell { text-align: center; font-size: 11px; font-weight: bold; color: var(--text-muted); padding: 4px 0; }
+    .cal-cell { aspect-ratio: 1; border: 1px solid var(--border); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; cursor: pointer; position: relative; background: #fff; }
+    .cal-cell.empty { background: transparent; border: none; cursor: default; }
+    .cal-cell.today { border: 2px solid var(--primary); font-weight: bold; color: var(--primary); }
+    .cal-cell.scratched { color: #cbd5e1; }
+    .cal-cell .scratch-line { position: absolute; width: 80%; height: 2px; background: #ef4444; top: 50%; left: 10%; transform: rotate(-15deg); display: none; }
+    .cal-cell.scratched .scratch-line { display: block; }
 
-    #loadingScreen { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; z-index: 999; }
-    #loadingScreen .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--text); border-radius: 50%; animation: spin 0.7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #loadingScreen p { font-size: 0.85rem; color: var(--muted); }
-
-    .fab-cal { position: fixed; bottom: 1.5rem; right: 1.5rem; width: 56px; height: 56px; background: var(--text); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(0,0,0,0.2); cursor: pointer; z-index: 90; transition: transform 0.15s; border: none; }
-    .fab-cal:active { transform: scale(0.92); }
-    .fab-cal svg { width: 24px; height: 24px; fill: #ffffff; }
-
-    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; margin-top: 0.5rem; }
-    .cal-day-name { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; padding-bottom: 4px; }
-    .cal-cell { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 0.88rem; font-weight: 500; border-radius: 8px; background: var(--bg); cursor: pointer; position: relative; overflow: hidden; user-select: none; border: 1px solid transparent; }
-    .cal-cell.empty { background: transparent; cursor: default; pointer-events: none; }
-    .cal-cell.today { border-color: var(--text); font-weight: 700; }
-    .cal-cell.scratched { background: #f0fdf4; color: #16a34a; }
-    .cal-cell.scratched::after { content: ''; position: absolute; inset: 4px; border: 1.5px dashed #16a34a; border-radius: 6px; opacity: 0.5; }
-    .scratch-line { position: absolute; width: 0%; height: 2px; background: #16a34a; top: 50%; left: 10%; transform: translateY(-50%) rotate(-10deg); transition: width 0.2s ease-in-out; pointer-events: none; }
-    .cal-cell.scratched .scratch-line { width: 80%; }
-
-    @media (min-width: 520px) {
-      .modal { border-radius: var(--radius); margin-bottom: 2rem; }
-      .modal-overlay { align-items: center; padding: 1rem; }
-    }
+    .empty-state { text-align: center; color: var(--text-muted); padding: 30px 15px; font-size: 14px; }
+    .loading-screen { position: fixed; top:0; left:0; width:100%; height:100%; background:#fff; z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; font-weight:bold; }
+    .spinner { width:40px; height:40px; border:4px solid #f3f3f3; border-top:4px solid var(--primary); border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
 
-<div id="loadingScreen">
-  <div class="spinner"></div>
-  <p>Učitavanje...</p>
-</div>
-
-<header>
-  <div class="header-left">
-    <div class="logo-dot">
-      <svg viewBox="0 0 16 16"><path d="M2 3h12v2H2zM2 7h8v2H2zM2 11h10v2H2z"/></svg>
-    </div>
-    <h1>Aleksandra Ivković</h1>
+  <div id="loadingScreen" class="loading-screen">
+    <div class="spinner"></div>
+    <div>Učitavanje podataka...</div>
   </div>
-  <div style="display:flex;align-items:center;gap:0.75rem">
-    <span class="sync-label"><span class="sync-dot" id="syncDot"></span><span id="syncText">—</span></span>
-    <div class="info-pills">
-      <span class="week-pill" id="weekLabel"></span>
-      <span class="date-pill" id="dateLabel"></span>
+
+  <header>
+    <div class="header-pills">
+      <span class="pill" id="weekLabel">NEDELJA --</span>
+      <span class="pill" id="dateLabel">-- --</span>
+      <span class="pill" style="cursor:pointer;" onclick="openCalendarModal()">📅 KALENDAR</span>
     </div>
-  </div>
-</header>
-
-<nav id="topNav">
-  <button class="tab-btn active" data-target="planTab"     onclick="showTab('planTab',this)">Plan</button>
-  <button class="tab-btn"        data-target="mealsTab"    onclick="showTab('mealsTab',this)">Jela</button>
-  <button class="tab-btn"        data-target="pantryTab"   onclick="showTab('pantryTab',this)">Špajz</button>
-  <button class="tab-btn"        data-target="shoppingTab" onclick="showTab('shoppingTab',this)">Kupovina</button>
-  <button class="tab-btn"        data-target="statsTab"    onclick="showTab('statsTab',this)">Cena</button>
-</nav>
-
-<main id="swipeArea">
-
-  <!-- PLAN -->
-  <div id="planTab" class="tab-content active">
-    <div class="card" style="padding:1rem">
-      <div class="section-header">
-        <span class="card-title">Nedeljni plan obroka</span>
-        <button class="btn btn-ghost" onclick="resetPlan()">Resetuj</button>
+    <div class="header-pills">
+      <div class="pill sync">
+        <div id="syncDot" class="sync-dot"></div>
+        <span id="syncText">Sinkronizacija...</span>
       </div>
-      <div id="plannerBody" style="display:flex;flex-direction:column;gap:0.6rem"></div>
     </div>
-  </div>
+  </header>
 
-  <!-- JELA -->
-  <div id="mealsTab" class="tab-content">
-    <div class="card">
-      <span class="card-title">Dodaj jelo</span>
-      <div class="form-stack">
-        <input id="mealName" type="text" placeholder="Naziv jela">
-        <div class="cat-picker">
-          <button class="cat-btn" id="catD" onclick="selectCat('Doručak')">Doručak</button>
-          <button class="cat-btn" id="catU" onclick="selectCat('Užina')">Užina</button>
-          <button class="cat-btn" id="catR" onclick="selectCat('Ručak')">Ručak</button>
-          <button class="cat-btn" id="catV" onclick="selectCat('Večera')">Večera</button>
+  <nav class="nav-tabs">
+    <button class="tab-btn active" data-target="planTab" onclick="showTab('planTab', this)">Planer</button>
+    <button class="tab-btn" data-target="mealsTab" onclick="showTab('mealsTab', this)">Jela (<span id="mealCountBadge">0</span>)</button>
+    <button class="tab-btn" data-target="pantryTab" onclick="showTab('pantryTab', this)">Špajz (<span id="pantryCountBadge">0</span>)</button>
+    <button class="tab-btn" data-target="shoppingTab" onclick="showTab('shoppingTab', this)">Kupovina</button>
+    <button class="tab-btn" data-target="statsTab" onclick="showTab('statsTab', this)">Stats</button>
+  </nav>
+
+  <div class="main-container" id="swipeArea">
+    
+    <!-- PLANER TAB -->
+    <div id="planTab" class="tab-content active">
+      <div style="margin-bottom:15px; display:flex; gap:10px;">
+        <button class="btn btn-secondary" style="flex:1;" onclick="resetPlan()">Isprazni plan</button>
+      </div>
+      <div id="plannerBody"></div>
+    </div>
+
+    <!-- JELA TAB -->
+    <div id="mealsTab" class="tab-content">
+      <div class="form-group">
+        <input type="text" id="mealName" placeholder="Naziv jela (npr. Mućkalica)">
+        <div class="cat-selector">
+          <button type="button" class="cat-btn" id="catD" onclick="selectCat('Doručak')">Doručak</button>
+          <button type="button" class="cat-btn" id="catU" onclick="selectCat('Užina')">Užina</button>
+          <button type="button" class="cat-btn" id="catR" onclick="selectCat('Ručak')">Ručak</button>
+          <button type="button" class="cat-btn" id="catV" onclick="selectCat('Večera')">Večera</button>
         </div>
-        <textarea id="mealIngredients" placeholder="Sastojci (jedan po liniji):&#10;Pirinač:100g&#10;Mleko:200ml&#10;Jaja:3kom"></textarea>
-        <button class="btn btn-primary btn-full" onclick="addMeal()">+ Dodaj jelo</button>
+        <textarea id="mealIngredients" rows="3" placeholder="Sastojci (svaki u novi red u formatu Naziv:Količina, npr. Mleko:200ml)"></textarea>
+        <button class="btn" onclick="addMeal()">Dodaj jelo</button>
       </div>
+      <input type="text" id="mealSearch" class="search-bar" placeholder="Pretraži jela...">
+      <div id="mealsList" class="list-container"></div>
     </div>
-    <div class="card">
-      <div class="section-header">
-        <span class="card-title">Moja jela</span>
-        <span class="badge" id="mealCountBadge">0</span>
-      </div>
-      <div class="search-input-wrap">
-        <span class="search-icon">⌕</span>
-        <input id="mealSearch" type="text" placeholder="Pretraži po nazivu...">
-      </div>
-      <div class="meals-list" id="mealsList"></div>
-    </div>
-  </div>
 
-  <!-- ŠPAJZ -->
-  <div id="pantryTab" class="tab-content">
-    <div class="card">
-      <span class="card-title">Dodaj u špajz / bazu namirnica</span>
-      <p style="font-size:0.75rem;color:var(--muted);margin-top:-0.5rem;margin-bottom:0.75rem;">Unesi pakovanje namirnice i njenu cenu da bi sistem računao troškove obroka.</p>
-      <div class="form-stack">
-        <input id="pantryItemName" type="text" placeholder="Naziv namirnice (npr. Jaja)">
-        <input id="pantryItemAmount" type="text" placeholder="Ukupna količina u pakovanju (npr. 1000g)">
-        <input id="pantryItemPrice" type="number" placeholder="Ukupna cena pakovanja (RSD)" inputmode="numeric">
-        <button class="btn btn-primary btn-full" onclick="addPantryItem()">+ Dodaj namirnicu</button>
+    <!-- ŠPAJZ TAB -->
+    <div id="pantryTab" class="tab-content">
+      <div class="form-group">
+        <input type="text" id="pantryItemName" placeholder="Naziv namirnice (npr. Mleko)">
+        <div class="form-row">
+          <input type="text" id="pantryItemAmount" placeholder="Količina u pakovanju (npr. 1l ili 5kom)">
+          <input type="number" id="pantryItemPrice" placeholder="Cena celog pakovanja (RSD)">
+        </div>
+        <button class="btn" onclick="addPantryItem()">Dodaj u špajz</button>
       </div>
+      <div id="pantryList" class="list-container"></div>
     </div>
-    <div class="card">
-      <div class="section-header">
-        <span class="card-title">Stanje i cene namirnica</span>
-        <span class="badge" id="pantryCountBadge">0</span>
-      </div>
-      <div class="meals-list" id="pantryList"></div>
-    </div>
-  </div>
 
-  <!-- KUPOVINA -->
-  <div id="shoppingTab" class="tab-content">
-    <div class="card">
-      <span class="card-title">Generiši listu</span>
-      <div class="btn-row">
-        <button class="btn" onclick="generateShopping(2)">Sledeća 2 dana</button>
-        <button class="btn btn-primary" onclick="generateShopping()">Cela nedelja</button>
-      </div>
-    </div>
-    <div class="card">
-      <div class="total-label">Ukupan trošak obroka</div>
-      <div class="total-big" id="weeklyTotal">0 RSD</div>
-      <div class="divider"></div>
-      <div class="total-label">Preostalo za kupiti</div>
-      <div style="font-family:'Geist Mono',monospace;font-size:1.1rem;color:var(--muted)" id="uncheckedCount">— stavki</div>
-    </div>
-    <div class="card">
-      <div class="section-header">
-        <span class="card-title">Lista za kupovinu</span>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <button class="btn btn-ghost" id="shareShoppingBtn" onclick="shareShoppingList()" style="display:none;color:var(--text);font-weight:500;">⎋ Podeli</button>
-          <button class="btn btn-ghost" id="finishShoppingBtn" onclick="finishShopping()" style="display:none;color:#16a34a;font-weight:600;">✓ Završi</button>
+    <!-- KUPOVINA TAB -->
+    <div id="shoppingTab" class="tab-content">
+      <div class="shopping-meta">
+        <div>
+          <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase;">Ukupni trošak plana</div>
+          <div class="val" id="weeklyTotal" style="font-size:22px; font-weight:bold; color:var(--primary-dark);">0 RSD</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase;">Ostalo za kupovinu</div>
+          <div class="val" id="uncheckedCount" style="font-size:16px; font-weight:bold; color:#4a5568;">0 stavki</div>
         </div>
       </div>
-      <ul id="shoppingList" style="list-style:none"></ul>
+      <div style="margin-bottom:15px; display:flex; gap:8px;">
+        <select style="flex:1; padding:8px;" onchange="generateShopping(parseInt(this.value))">
+          <option value="7">Plan za svih 7 dana</option>
+          <option value="3">Sledeća 3 dana</option>
+          <option value="1">Samo danas</option>
+        </select>
+        <button class="btn" id="shareShoppingBtn" style="padding:8px 15px;" onclick="shareShoppingList()">Deli listu</button>
+      </div>
+      <ul id="shoppingList" class="shopping-list"></ul>
     </div>
-  </div>
 
-  <!-- STATISTIKA -->
-  <div id="statsTab" class="tab-content">
-    <div class="card">
-      <span class="card-title">Finansijski pregled</span>
-      <div class="stat-grid">
-        <div class="stat-block">
-          <div class="stat-label">Ukupno jela</div>
-          <div class="stat-value" id="statMealCount">0</div>
+    <!-- STATISTIKA TAB -->
+    <div id="statsTab" class="tab-content">
+      <div class="stats-grid">
+        <div class="stat-box">
+          <h4>Ukupno jela</h4>
+          <div class="val" id="statMealCount">0</div>
         </div>
-        <div class="stat-block">
-          <div class="stat-label">Prosečna cena</div>
-          <div class="stat-value" id="statAvgPrice">0</div>
+        <div class="stat-box">
+          <h4>Prosečna cena obroka</h4>
+          <div class="val" id="statAvgPrice">0 RSD</div>
         </div>
-        <div class="stat-block" style="grid-column:1/-1">
-          <div class="stat-label">Trošak ove nedelje</div>
-          <div class="stat-value" style="font-size:2rem" id="statWeekTotal">0 RSD</div>
+        <div class="stat-box" style="grid-column: span 2;">
+          <h4>Ukupan trošak trenutne nedelje</h4>
+          <div class="val" id="statWeekTotal" style="color:var(--primary-dark);">0 RSD</div>
         </div>
       </div>
     </div>
+
   </div>
 
-</main>
-
-<!-- FAB KALENDAR -->
-<button class="fab-cal" onclick="openCalendarModal()" title="Kalendar praćenja">
-  <svg viewBox="0 0 24 24"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/></svg>
-</button>
-
-<!-- EDIT MODAL -->
-<div class="modal-overlay" id="editModal" onclick="handleModalClick(event)">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <h2 id="modalTitle">Izmeni</h2>
-
-    <div class="form-stack" id="modalMealFields">
-      <input id="editMealName" type="text" placeholder="Naziv jela">
-      <div class="cat-picker">
-        <button class="cat-btn" id="editCatD" onclick="selectEditCat('Doručak')">Doručak</button>
-        <button class="cat-btn" id="editCatU" onclick="selectEditCat('Užina')">Užina</button>
-        <button class="cat-btn" id="editCatR" onclick="selectEditCat('Ručak')">Ručak</button>
-        <button class="cat-btn" id="editCatV" onclick="selectEditCat('Večera')">Večera</button>
+  <!-- UNIVERZALNI EDIT MODAL -->
+  <div id="editModal" class="modal-overlay" onclick="handleModalClick(event)">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="modalTitle">Izmena</span>
+        <button class="btn btn-edit" style="padding:5px 10px;" onclick="closeEditModal()">X</button>
       </div>
-      <textarea id="editMealIngredients"></textarea>
-    </div>
-
-    <div class="form-stack" id="modalPantryFields" style="display:none">
-      <input id="editPantryName" type="text" placeholder="Naziv namirnice">
-      <input id="editPantryAmount" type="text" placeholder="Količina pakovanja">
-      <input id="editPantryPrice" type="number" placeholder="Cena (RSD)" inputmode="numeric">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:0.85rem;color:var(--muted)">Trenutne zalihe:</span>
-        <input id="editPantryCurrentStock" type="number" style="width:90px;" placeholder="Npr. 5">
+      <div class="modal-body">
+        <!-- Polja za jelo -->
+        <div id="modalMealFields" style="display:none; flex-direction:column; gap:12px; width:100%;">
+          <input type="text" id="editMealName" placeholder="Naziv jela">
+          <div class="cat-selector">
+            <button type="button" class="cat-btn" id="editCatD" onclick="selectEditCat('Doručak')">Doručak</button>
+            <button type="button" class="cat-btn" id="editCatU" onclick="selectEditCat('Užina')">Užina</button>
+            <button type="button" class="cat-btn" id="editCatR" onclick="selectEditCat('Ručak')">Ručak</button>
+            <button type="button" class="cat-btn" id="editCatV" onclick="selectEditCat('Večera')">Večera</button>
+          </div>
+          <textarea id="editMealIngredients" rows="4" placeholder="Sastojci (Naziv:Količina)"></textarea>
+        </div>
+        <!-- Polja za špajz -->
+        <div id="modalPantryFields" style="display:none; flex-direction:column; gap:12px; width:100%;">
+          <input type="text" id="editPantryName" placeholder="Naziv namirnice">
+          <input type="text" id="editPantryAmount" placeholder="Količina u pakovanju (npr. 5kom, 240g)">
+          <input type="number" id="editPantryPrice" placeholder="Cena celog pakovanja">
+        </div>
       </div>
-    </div>
-
-    <div class="modal-footer" style="justify-content:space-between;align-items:center;width:100%">
-      <button class="btn btn-danger" onclick="handleModalDelete()">Izbriši trajno</button>
-      <div style="display:flex;gap:0.6rem">
-        <button class="btn" onclick="closeEditModal()">Otkaži</button>
-        <button class="btn btn-primary" onclick="saveModalEdit()">Sačuvaj</button>
+      <div class="modal-footer">
+        <button class="btn btn-danger" onclick="handleModalDelete()">Obriši</button>
+        <button class="btn" onclick="saveModalEdit()">Sačuvaj</button>
       </div>
     </div>
   </div>
-</div>
 
-<!-- KALENDAR MODAL -->
-<div class="modal-overlay" id="calendarModal" onclick="handleCalendarModalClick(event)">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-handle"></div>
-    <h2 id="calModalTitle"></h2>
-    <p style="text-align:center;font-size:0.75rem;color:var(--muted);margin-bottom:1rem">Tapni na dan da ga izgrebeš / poništiš</p>
-    <div class="cal-grid">
-      <div class="cal-day-name">P</div><div class="cal-day-name">U</div>
-      <div class="cal-day-name">S</div><div class="cal-day-name">Č</div>
-      <div class="cal-day-name">P</div><div class="cal-day-name">S</div>
-      <div class="cal-day-name">N</div>
-    </div>
-    <div class="cal-grid" id="calendarDaysGrid"></div>
-    <div class="modal-footer" style="justify-content:center;margin-top:1.25rem">
-      <button class="btn btn-primary" onclick="closeCalendarModal()">Zatvori</button>
+  <!-- KALENDAR MODAL -->
+  <div id="calendarModal" class="modal-overlay" onclick="handleCalendarModalClick(event)">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="calModalTitle">Kalendar</span>
+        <button class="btn btn-edit" style="padding:5px 10px;" onclick="closeCalendarModal()">X</button>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-header-cell">PO</div><div class="cal-header-cell">UT</div><div class="cal-header-cell">SR</div>
+        <div class="cal-header-cell">ČE</div><div class="cal-header-cell">PE</div><div class="cal-header-cell">SU</div>
+        <div class="cal-header-cell">NE</div>
+      </div>
+      <div id="calendarDaysGrid" class="cal-grid"></div>
     </div>
   </div>
-</div>
 
-<script type="module">
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("/meal-alex/sw.js").catch(e => console.log(e));
-  }
+  <!-- LOGIKA I FIREBASE -->
+  <script type="module">
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/meal-alex/sw.js").catch(e => console.log(e));
+    }
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyD81IjQPT1Qn52jfFONGfP57hk39uvvf3I",
-    authDomain: "planner-alex.firebaseapp.com",
-    projectId: "planner-alex",
-    storageBucket: "planner-alex.firebasestorage.app",
-    messagingSenderId: "61892373505",
-    appId: "1:61892373505:web:28be6431939c911d2c2400"
-  };
+    const firebaseConfig = {
+      apiKey: "AIzaSyD81IjQPT1Qn52jfFONGfP57hk39uvvf3I",
+      authDomain: "planner-alex.firebaseapp.com",
+      projectId: "planner-alex",
+      storageBucket: "planner-alex.firebasestorage.app",
+      messagingSenderId: "61892373505",
+      appId: "1:61892373505:web:28be6431939c911d2c2400"
+    };
 
-  const app = initializeApp(firebaseConfig);
-  const db  = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
 
-  const DAYS       = ["Ponedeljak","Utorak","Sreda","Četvrtak","Petak","Subota","Nedelja"];
-  const MEAL_TYPES = ["Doručak","Užina","Ručak","Večera"];
-  const TYPE_TAGS  = { "Doručak":"tag-dorucak","Užina":"tag-uzina","Ručak":"tag-rucak","Večera":"tag-vecera" };
-  const TAB_ORDER  = ["planTab","mealsTab","pantryTab","shoppingTab","statsTab"];
+    const DAYS       = ["Ponedeljak","Utorak","Sreda","Četvrtak","Petak","Subota","Nedelja"];
+    const MEAL_TYPES = ["Doručak","Užina","Ručak","Večera"];
+    const TAB_ORDER  = ["planTab","mealsTab","pantryTab","shoppingTab","statsTab"];
 
-  let meals          = [];
-  let weeklyPlan     = {};
-  let pantry         = [];
-  let scratchedDates = {};
-  let localShoppingState = {};
-  let editingMode    = null;
-  let editingIndex   = null;
-  let saveTimeout    = null;
-  let calMonth       = new Date().getMonth();
-  let calYear        = new Date().getFullYear();
+    let meals          = [];
+    let weeklyPlan     = {};
+    let pantry         = [];
+    let scratchedDates = {};
+    let localShoppingState = {};
+    let editingMode    = null;
+    let editingIndex   = null;
+    let saveTimeout    = null;
+    let selectedDaysRange = 7;
 
-  // ── SYNC ────────────────────────────────────────────────
-  function setSyncStatus(state) {
-    const dot  = document.getElementById("syncDot");
-    const text = document.getElementById("syncText");
-    if (!dot || !text) return;
-    dot.className = "sync-dot " + state;
-    text.textContent = state === "syncing" ? "Čuvanje..." : state === "synced" ? "Sačuvano" : "Greška";
-  }
+    // ── SYNC ────────────────────────────────────────────────
+    function setSyncStatus(state) {
+      const dot  = document.getElementById("syncDot");
+      const text = document.getElementById("syncText");
+      if (!dot || !text) return;
+      dot.className = "sync-dot " + state;
+      text.textContent = state === "syncing" ? "Čuvanje..." : state === "synced" ? "Sačuvano" : "Greška";
+    }
 
-  async function saveData() {
-    clearTimeout(saveTimeout);
-    saveTimeout = setTimeout(async () => {
-      setSyncStatus("syncing");
-      try {
-        await setDoc(doc(db, "planner", "data"), { meals, weeklyPlan, pantry, scratchedDates });
-        setSyncStatus("synced");
-      } catch(e) {
-        console.error(e);
+    async function saveData() {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(async () => {
+        setSyncStatus("syncing");
+        try {
+          await setDoc(doc(db, "planner", "data"), { meals, weeklyPlan, pantry, scratchedDates });
+          setSyncStatus("synced");
+        } catch(e) {
+          console.error(e);
+          setSyncStatus("error");
+        }
+      }, 600);
+    }
+
+    function initRealtimeSync() {
+      onSnapshot(doc(db, "planner", "data"), snap => {
+        if (snap.exists()) {
+          const d = snap.data();
+          meals          = d.meals          || [];
+          weeklyPlan     = d.weeklyPlan     || {};
+          pantry         = d.pantry         || [];
+          scratchedDates = d.scratchedDates || {};
+        }
+        document.getElementById("loadingScreen").style.display = "none";
+        renderAll();
+      }, err => {
+        console.error(err);
         setSyncStatus("error");
-      }
-    }, 600);
-  }
-
-  function initRealtimeSync() {
-    onSnapshot(doc(db, "planner", "data"), snap => {
-      if (snap.exists()) {
-        const d = snap.data();
-        meals          = d.meals          || [];
-        weeklyPlan     = d.weeklyPlan     || {};
-        pantry         = d.pantry         || [];
-        scratchedDates = d.scratchedDates || {};
-      }
-      document.getElementById("loadingScreen").style.display = "none";
-      renderAll();
-    }, err => {
-      console.error(err);
-      setSyncStatus("error");
-      document.getElementById("loadingScreen").style.display = "none";
-    });
-  }
-
-  // ── TABS ────────────────────────────────────────────────
-  window.showTab = function(id, btn, forceDir = null) {
-    const cur = document.querySelector(".tab-content.active");
-    let dir = "slide-in-right";
-    if (cur) {
-      const oi = TAB_ORDER.indexOf(cur.id);
-      const ni = TAB_ORDER.indexOf(id);
-      if (forceDir) dir = forceDir;
-      else if (ni < oi) dir = "slide-in-left";
-    }
-    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active","slide-in-right","slide-in-left"));
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    const el = document.getElementById(id);
-    el.classList.add("active", dir);
-    const activeBtn = btn || document.querySelector(`[data-target="${id}"]`);
-    if (activeBtn) { activeBtn.classList.add("active"); activeBtn.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"}); }
-    if (id === "statsTab")    updateStats();
-    if (id === "pantryTab")   renderPantryList();
-    if (id === "shoppingTab") generateShopping();
-  };
-
-  // ── HELPERS ─────────────────────────────────────────────
-  function parseIngredients(text) {
-    if (!text) return [];
-    return text.split("\n").map(line => {
-      const parts = line.split(":");
-      return { name: parts[0]?.trim(), amount: parts[1]?.trim() || "" };
-    }).filter(i => i.name);
-  }
-
-  function parseNum(str) {
-    const n = parseFloat(String(str || "").replace(/[^0-9.]/g, ""));
-    return isNaN(n) ? 1 : n;
-  }
-
-  function calcIngPrice(ingName, ingAmountStr) {
-    const pItem = pantry.find(p => p.name.toLowerCase() === ingName.toLowerCase());
-    if (!pItem || !pItem.price) return 0;
-    let req = parseNum(ingAmountStr);
-    let tot = parseNum(pItem.amount);
-    const rs = String(ingAmountStr).toLowerCase();
-    const ts = String(pItem.amount).toLowerCase();
-    if (rs.includes("ml") && ts.includes("l") && !ts.includes("ml")) tot *= 1000;
-    else if (rs.includes("l") && !rs.includes("ml") && ts.includes("ml")) req *= 1000;
-    if (rs.includes("g") && !rs.includes("kg") && ts.includes("kg")) tot *= 1000;
-    else if (rs.includes("kg") && ts.includes("g") && !ts.includes("kg")) req *= 1000;
-    return (pItem.price / tot) * req;
-  }
-
-  function getMealPrice(meal) {
-    if (!meal.ingredients) return 0;
-    return Math.round(meal.ingredients.reduce((s, i) => s + calcIngPrice(i.name, i.amount), 0));
-  }
-
-  function renderAll() {
-    renderPlanner();
-    renderMealsList();
-    renderPantryList();
-    generateShopping();
-    updateStats();
-    renderCalendarGrid();
-  }
-
-  // ── JELA ────────────────────────────────────────────────
-  let selectedCat = "";
-  let editSelectedCat = "";
-
-  window.selectCat = function(cat) {
-    selectedCat = cat;
-    const map = { "Doručak":"catD","Užina":"catU","Ručak":"catR","Večera":"catV" };
-    const cls = { "Doručak":"sel-D","Užina":"sel-U","Ručak":"sel-R","Večera":"sel-V" };
-    Object.values(map).forEach(id => { const b = document.getElementById(id); if(b){ b.className="cat-btn"; } });
-    const btn = document.getElementById(map[cat]);
-    if (btn) btn.classList.add(cls[cat]);
-  };
-
-  window.selectEditCat = function(cat) {
-    editSelectedCat = cat;
-    const map = { "Doručak":"editCatD","Užina":"editCatU","Ručak":"editCatR","Večera":"editCatV" };
-    const cls = { "Doručak":"sel-D","Užina":"sel-U","Ručak":"sel-R","Večera":"sel-V" };
-    Object.values(map).forEach(id => { const b = document.getElementById(id); if(b){ b.className="cat-btn"; } });
-    const btn = document.getElementById(map[cat]);
-    if (btn) btn.classList.add(cls[cat]);
-  };
-
-  window.addMeal = function() {
-    const nameEl = document.getElementById("mealName");
-    const ingEl  = document.getElementById("mealIngredients");
-    const name   = nameEl.value.trim();
-    if (!name) { nameEl.focus(); return; }
-    if (!selectedCat) { alert("Izaberi kategoriju (Doručak / Užina / Ručak / Večera)"); return; }
-    meals.push({ name, category: selectedCat, ingredients: parseIngredients(ingEl.value) });
-    saveData(); renderAll();
-    nameEl.value = ""; ingEl.value = "";
-    selectedCat = "";
-    ["catD","catU","catR","catV"].forEach(id => { const b = document.getElementById(id); if(b) b.className="cat-btn"; });
-    nameEl.focus();
-  };
-
-  function renderMealsList() {
-    const query = (document.getElementById("mealSearch")?.value || "").toLowerCase();
-    const container = document.getElementById("mealsList");
-    if (!container) return;
-    document.getElementById("mealCountBadge").textContent = meals.length;
-    const filtered = meals.filter(m => m.name.toLowerCase().includes(query));
-    if (filtered.length === 0) {
-      container.innerHTML = `<div class="empty-state">${meals.length === 0 ? "Nema jela.<br>Dodaj prvo jelo iznad." : "Nema rezultata."}</div>`;
-      return;
-    }
-    container.innerHTML = "";
-    filtered.forEach(meal => {
-      const idx = meals.indexOf(meal);
-      const price = getMealPrice(meal);
-      const div = document.createElement("div");
-      div.className = "meal-card";
-      div.innerHTML = `
-        <div class="meal-card-info">
-          <h3>${meal.name}</h3>
-          ${price > 0 ? `<span class="price">${price} RSD</span>` : ""}
-          ${meal.category ? `<span class="meal-cat-tag tag-${meal.category==="Doručak"?"dorucak":meal.category==="Užina"?"uzina":meal.category==="Ručak"?"rucak":"vecera"}">${meal.category}</span>` : ""}
-          ${meal.ingredients.length ? `<div class="ingredients">${meal.ingredients.map(i=>`${i.name} · ${i.amount}`).join("<br>")}</div>` : ""}
-        </div>
-        <div class="meal-card-actions">
-          <button class="btn btn-edit" onclick="editMeal(${idx})">Edit</button>
-        </div>`;
-      container.appendChild(div);
-    });
-  }
-
-  window.editMeal = function(idx) {
-    editingMode = "meal"; editingIndex = idx;
-    document.getElementById("modalTitle").textContent = "Izmeni jelo";
-    document.getElementById("modalMealFields").style.display = "flex";
-    document.getElementById("modalPantryFields").style.display = "none";
-    const meal = meals[idx];
-    document.getElementById("editMealName").value = meal.name;
-    document.getElementById("editMealIngredients").value = meal.ingredients.map(i=>`${i.name}:${i.amount}`).join("\n");
-    editSelectedCat = meal.category || "";
-    if (editSelectedCat) window.selectEditCat(editSelectedCat);
-    else ["editCatD","editCatU","editCatR","editCatV"].forEach(id => { const b = document.getElementById(id); if(b) b.className="cat-btn"; });
-    document.getElementById("editModal").classList.add("open");
-  };
-
-  // ── ŠPAJZ ────────────────────────────────────────────────
-  window.addPantryItem = function() {
-    const nameEl   = document.getElementById("pantryItemName");
-    const amountEl = document.getElementById("pantryItemAmount");
-    const priceEl  = document.getElementById("pantryItemPrice");
-    const name     = nameEl.value.trim();
-    const amount   = amountEl.value.trim() || "1kom";
-    const price    = Number(priceEl.value) || 0;
-    if (!name) return;
-    const ei = pantry.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
-    if (ei > -1) {
-      pantry[ei].amount = amount; pantry[ei].price = price;
-      if (pantry[ei].currentStock === undefined) pantry[ei].currentStock = parseNum(amount);
-    } else {
-      pantry.push({ name, amount, price, inStock: false, currentStock: parseNum(amount) });
-    }
-    saveData(); renderAll();
-    nameEl.value = ""; amountEl.value = ""; priceEl.value = ""; nameEl.focus();
-  };
-
-  function renderPantryList() {
-    const container = document.getElementById("pantryList");
-    if (!container) return;
-    document.getElementById("pantryCountBadge").textContent = pantry.length;
-    if (pantry.length === 0) {
-      container.innerHTML = `<div class="empty-state">Baza namirnica je prazna.<br>Dodaj artikle i njihove cene.</div>`;
-      return;
-    }
-    container.innerHTML = "";
-    pantry.forEach((item, idx) => {
-      const cur = item.currentStock !== undefined ? item.currentStock : parseNum(item.amount);
-      const div = document.createElement("div");
-      div.className = "meal-card";
-      div.style.padding = "0.6rem 1rem";
-      div.innerHTML = `
-        <div class="meal-card-info" style="display:flex;flex-direction:column;gap:4px;padding-right:0.5rem">
-          <h3>${item.name}</h3>
-          <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap">
-            <span class="badge" style="font-family:inherit;font-weight:500;background:#f1f5f9">Na stanju: ${cur} od ${item.amount}</span>
-            <span class="price" style="font-size:0.78rem;color:var(--text);background:var(--surface);padding:1px 6px;border-radius:4px;border:1px solid var(--border)">${item.price} RSD</span>
-          </div>
-        </div>
-        <div class="meal-card-actions" style="gap:5px">
-          <div style="display:flex;gap:3px;align-items:center;margin-right:4px">
-            <button class="btn-qty" onclick="changePantryQty(${idx},-1)">–</button>
-            <button class="btn-qty" onclick="changePantryQty(${idx},1)">+</button>
-          </div>
-          <label class="pantry-status-check ${item.inStock ? 'has-stock' : ''}">
-            <input type="checkbox" ${item.inStock ? "checked" : ""} onchange="togglePantryStock(${idx},this.checked)">
-            Imam
-          </label>
-          <button class="btn btn-edit" onclick="editPantryItem(${idx})">Edit</button>
-        </div>`;
-      container.appendChild(div);
-    });
-  }
-
-  window.togglePantryStock = function(idx, checked) {
-    pantry[idx].inStock = checked;
-    pantry[idx].currentStock = checked ? parseNum(pantry[idx].amount) : 0;
-    saveData(); generateShopping(); renderPantryList();
-  };
-
-  window.changePantryQty = function(idx, change) {
-    if (pantry[idx].currentStock === undefined) pantry[idx].currentStock = parseNum(pantry[idx].amount);
-    pantry[idx].currentStock = Math.max(0, pantry[idx].currentStock + change);
-    pantry[idx].inStock = pantry[idx].currentStock > 0;
-    saveData(); renderPantryList(); generateShopping();
-  };
-
-  window.editPantryItem = function(idx) {
-    editingMode = "pantry"; editingIndex = idx;
-    document.getElementById("modalTitle").textContent = "Izmeni namirnicu";
-    document.getElementById("modalMealFields").style.display = "none";
-    document.getElementById("modalPantryFields").style.display = "flex";
-    const item = pantry[idx];
-    document.getElementById("editPantryName").value = item.name;
-    document.getElementById("editPantryAmount").value = item.amount;
-    document.getElementById("editPantryPrice").value = item.price;
-    document.getElementById("editPantryCurrentStock").value = item.currentStock !== undefined ? item.currentStock : parseNum(item.amount);
-    document.getElementById("editModal").classList.add("open");
-  };
-
-  // ── MODAL ────────────────────────────────────────────────
-  window.closeEditModal = function() {
-    document.getElementById("editModal").classList.remove("open");
-    editingIndex = null; editingMode = null;
-  };
-
-  window.handleModalClick = function(e) {
-    if (e.target === document.getElementById("editModal")) window.closeEditModal();
-  };
-
-  window.saveModalEdit = function() {
-    if (editingIndex === null) return;
-    if (editingMode === "meal") {
-      const oldName = meals[editingIndex].name;
-      const newName = document.getElementById("editMealName").value.trim();
-      meals[editingIndex] = { name: newName || oldName, category: editSelectedCat || meals[editingIndex].category || "", ingredients: parseIngredients(document.getElementById("editMealIngredients").value) };
-      if (newName && newName !== oldName) {
-        DAYS.forEach(day => MEAL_TYPES.forEach(type => {
-          if (weeklyPlan[day]?.[type] === oldName) weeklyPlan[day][type] = newName;
-        }));
-      }
-    } else if (editingMode === "pantry") {
-      const newName  = document.getElementById("editPantryName").value.trim();
-      const newAmt   = document.getElementById("editPantryAmount").value.trim();
-      const newPrice = Number(document.getElementById("editPantryPrice").value) || 0;
-      const newStock = Number(document.getElementById("editPantryCurrentStock").value);
-      if (!newName) return;
-      pantry[editingIndex] = { ...pantry[editingIndex], name: newName, amount: newAmt || "1kom", price: newPrice, currentStock: isNaN(newStock) ? parseNum(newAmt) : newStock };
-      pantry[editingIndex].inStock = pantry[editingIndex].currentStock > 0;
-    }
-    saveData(); renderAll(); window.closeEditModal();
-  };
-
-  window.handleModalDelete = function() {
-    if (editingIndex === null) return;
-    if (editingMode === "meal") {
-      if (!confirm("Obrisati ovo jelo?")) return;
-      const oldName = meals[editingIndex].name;
-      meals.splice(editingIndex, 1);
-      DAYS.forEach(day => MEAL_TYPES.forEach(type => {
-        if (weeklyPlan[day]?.[type] === oldName) weeklyPlan[day][type] = "";
-      }));
-    } else if (editingMode === "pantry") {
-      if (!confirm("Obrisati ovu namirnicu?")) return;
-      pantry.splice(editingIndex, 1);
-    }
-    saveData(); renderAll(); window.closeEditModal();
-  };
-
-  // ── PLANNER ──────────────────────────────────────────────
-  function renderPlanner() {
-    const body = document.getElementById("plannerBody");
-    if (!body) return;
-    body.innerHTML = "";
-    DAYS.forEach(day => {
-      const wrap = document.createElement("div");
-      wrap.className = "planner-day";
-      wrap.innerHTML = `<div class="planner-day-header">${day}</div><div class="planner-day-body"></div>`;
-      const dayBody = wrap.querySelector(".planner-day-body");
-      MEAL_TYPES.forEach(type => {
-        const row = document.createElement("div");
-        row.className = "planner-row";
-        const tag = document.createElement("span");
-        tag.className = `meal-type-tag ${TYPE_TAGS[type]}`;
-        tag.textContent = type;
-        const sel = document.createElement("select");
-        const filtered = meals.filter(m => m.category === type);
-        sel.innerHTML = `<option value="">—</option>` + filtered.map(m => `<option value="${m.name}">${m.name}</option>`).join("");
-        sel.value = weeklyPlan[day]?.[type] || "";
-        sel.onchange = e => {
-          if (!weeklyPlan[day]) weeklyPlan[day] = {};
-          weeklyPlan[day][type] = e.target.value;
-          saveData(); updateStats();
-        };
-        row.appendChild(tag); row.appendChild(sel); dayBody.appendChild(row);
+        document.getElementById("loadingScreen").style.display = "none";
       });
-      body.appendChild(wrap);
-    });
-  }
-
-  window.resetPlan = function() {
-    if (!confirm("Resetovati ceo nedeljni plan?")) return;
-    weeklyPlan = {}; saveData(); renderPlanner(); updateStats();
-  };
-
-  // ── SHOPPING ─────────────────────────────────────────────
-  window.generateShopping = function(daysLimit = null) {
-    let total = 0;
-    const shoppingMap = {};
-    let daysToProcess = DAYS;
-    if (daysLimit) {
-      const todayIdx = (new Date().getDay() || 7) - 1;
-      daysToProcess = Array.from({length: daysLimit}, (_, i) => DAYS[(todayIdx + i) % 7]);
     }
 
-    DAYS.forEach(day => {
-      if (daysLimit && !daysToProcess.includes(day)) return;
-      MEAL_TYPES.forEach(type => {
-        const mealName = weeklyPlan[day]?.[type];
-        if (!mealName) return;
-        const meal = meals.find(m => m.name === mealName);
-        if (!meal) return;
-        total += getMealPrice(meal);
-        meal.ingredients.forEach(i => {
-          if (!shoppingMap[i.name]) shoppingMap[i.name] = { amounts: [], inPantryAndStocked: false };
-          if (i.amount) shoppingMap[i.name].amounts.push(i.amount);
+    // ── TABS ────────────────────────────────────────────────
+    window.showTab = function(id, btn, forceDir = null) {
+      const cur = document.querySelector(".tab-content.active");
+      let dir = "slide-in-right";
+      if (cur) {
+        const oi = TAB_ORDER.indexOf(cur.id);
+        const ni = TAB_ORDER.indexOf(id);
+        if (forceDir) dir = forceDir;
+        else if (ni < oi) dir = "slide-in-left";
+      }
+      document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active","slide-in-right","slide-in-left"));
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+      const el = document.getElementById(id);
+      el.classList.add("active", dir);
+      const activeBtn = btn || document.querySelector(`[data-target="${id}"]`);
+      if (activeBtn) { activeBtn.classList.add("active"); activeBtn.scrollIntoView({behavior:"smooth",block:"nearest",inline:"center"}); }
+      if (id === "statsTab")    updateStats();
+      if (id === "pantryTab")   renderPantryList();
+      if (id === "shoppingTab") generateShopping(selectedDaysRange);
+    };
+
+    // ── HELPERS / PARSERI SVE U JEDNOM ──────────────────────
+    function parseIngredients(text) {
+      if (!text) return [];
+      return text.split("\n").map(line => {
+        const parts = line.split(":");
+        return { name: parts[0]?.trim(), amount: parts[1]?.trim() || "" };
+      }).filter(i => i.name);
+    }
+
+    function parseNum(str) {
+      const n = parseFloat(String(str || "").replace(/[^0-9.]/g, ""));
+      return isNaN(n) ? 1 : n;
+    }
+
+    // Ekstrakcija čiste merne jedinice
+    function parseUnit(str) {
+      return String(str || "").replace(/[0-9.]/g, "").trim().toLowerCase();
+    }
+
+    function calcIngPrice(ingName, ingAmountStr) {
+      const pItem = pantry.find(p => p.name.toLowerCase() === ingName.toLowerCase());
+      if (!pItem || !pItem.price) return 0;
+      let req = parseNum(ingAmountStr);
+      let tot = parseNum(pItem.amount);
+      const ru = parseUnit(ingAmountStr);
+      const tu = parseUnit(pItem.amount);
+      
+      if (ru === "ml" && tu === "l") tot *= 1000;
+      else if (ru === "l" && tu === "ml") req *= 1000;
+      if (ru === "g" && tu === "kg") tot *= 1000;
+      else if (ru === "kg" && tu === "g") req *= 1000;
+      
+      return (pItem.price / tot) * req;
+    }
+
+    function getMealPrice(meal) {
+      if (!meal.ingredients) return 0;
+      return Math.round(meal.ingredients.reduce((s, i) => s + calcIngPrice(i.name, i.amount), 0));
+    }
+
+    function renderAll() {
+      renderPlanner();
+      renderMealsList();
+      renderPantryList();
+      generateShopping(selectedDaysRange);
+      updateStats();
+      renderCalendarGrid();
+      updateHeaderPills();
+    }
+
+    function updateHeaderPills() {
+      const now = new Date();
+      const startOfYear = new Date(now.getFullYear(), 0, 1);
+      const pastDaysOfWeek = (now - startOfYear) / 86400000;
+      const weekNum = Math.ceil((pastDaysOfWeek + startOfYear.getDay() + 1) / 7);
+      
+      document.getElementById("weekLabel").textContent = `NEDELJA ${weekNum}`;
+      document.getElementById("dateLabel").textContent = now.toLocaleDateString("sr-RS", { day: 'numeric', month: 'short' }).toUpperCase();
+    }
+
+    // ── JELA ────────────────────────────────────────────────
+    let selectedCat = "";
+    let editSelectedCat = "";
+
+    window.selectCat = function(cat) {
+      selectedCat = cat;
+      const map = { "Doručak":"catD","Užina":"catU","Ručak":"catR","Večera":"catV" };
+      const cls = { "Doručak":"sel-D","Užina":"sel-U","Ručak":"sel-R","Večera":"sel-V" };
+      Object.values(map).forEach(id => { const b = document.getElementById(id); if(b){ b.className="cat-btn"; } });
+      const btn = document.getElementById(map[cat]);
+      if (btn) btn.classList.add(cls[cat]);
+    };
+
+    window.selectEditCat = function(cat) {
+      editSelectedCat = cat;
+      const map = { "Doručak":"editCatD","Užina":"editCatU","Ručak":"editCatR","Večera":"editCatV" };
+      const cls = { "Doručak":"sel-D","Užina":"sel-U","Ručak":"sel-R","Večera":"sel-V" };
+      Object.values(map).forEach(id => { const b = document.getElementById(id); if(b){ b.className="cat-btn"; } });
+      const btn = document.getElementById(map[cat]);
+      if (btn) btn.classList.add(cls[cat]);
+    };
+
+    window.addMeal = function() {
+      const nameEl = document.getElementById("mealName");
+      const ingEl  = document.getElementById("mealIngredients");
+      const name   = nameEl.value.trim();
+      if (!name) { nameEl.focus(); return; }
+      if (!selectedCat) { alert("Izaberi kategoriju (Doručak / Užina / Ručak / Večera)"); return; }
+      meals.push({ name, category: selectedCat, ingredients: parseIngredients(ingEl.value) });
+      saveData(); renderAll();
+      nameEl.value = ""; ingEl.value = "";
+      selectedCat = "";
+      ["catD","catU","catR","catV"].forEach(id => { const b = document.getElementById(id); if(b) b.className="cat-btn"; });
+      nameEl.focus();
+    };
+
+    function renderMealsList() {
+      const query = (document.getElementById("mealSearch")?.value || "").toLowerCase();
+      const container = document.getElementById("mealsList");
+      if (!container) return;
+      document.getElementById("mealCountBadge").textContent = meals.length;
+      const filtered = meals.filter(m => m.name.toLowerCase().includes(query));
+      
+      if(filtered.length === 0) {
+        container.innerHTML = `<div class="empty-state">Nema pronađenih jela.</div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map((m, idx) => {
+        const actualIdx = meals.indexOf(m);
+        const price = getMealPrice(m);
+        const ingStr = m.ingredients.map(i => `${i.name} (${i.amount})`).join(", ");
+        return `
+          <div class="meal-card">
+            <div class="meal-card-info">
+              <h3>${m.name}</h3>
+              <span class="meal-cat-tag tag-${m.category.toLowerCase()}">${m.category}</span>
+              <div class="ingredients">${ingStr || 'Nema sastojaka'}</div>
+            </div>
+            <div class="meal-card-actions">
+              <span class="price">${price > 0 ? price + ' RSD' : '—'}</span>
+              <button class="btn btn-edit" onclick="openEditModal('meal', ${actualIdx})">Izmeni</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    document.getElementById("mealSearch")?.addEventListener("input", renderMealsList);
+
+    // ── ŠPAJZ ────────────────────────────────────────────────
+    window.addPantryItem = function() {
+      const nameEl = document.getElementById("pantryItemName");
+      const amEl   = document.getElementById("pantryItemAmount");
+      const prEl   = document.getElementById("pantryItemPrice");
+      const name   = nameEl.value.trim();
+      const amount = amEl.value.trim();
+      const price  = parseFloat(prEl.value);
+
+      if(!name) { nameEl.focus(); return; }
+      if(!amount) { amEl.focus(); return; }
+      if(isNaN(price)) { prEl.focus(); return; }
+
+      pantry.push({ name, amount, price });
+      saveData(); renderAll();
+      nameEl.value = ""; amEl.value = ""; prEl.value = "";
+      nameEl.focus();
+    };
+
+    function renderPantryList() {
+      const container = document.getElementById("pantryList");
+      if (!container) return;
+      document.getElementById("pantryCountBadge").textContent = pantry.length;
+
+      if(pantry.length === 0) {
+        container.innerHTML = `<div class="empty-state">Baza namirnica je prazna. Unesite artikle iznad.</div>`;
+        return;
+      }
+
+      // MODIFIKACIJA: Prikazuje se isključivo uneta količina (npr. 5kom ili 240g)
+      container.innerHTML = pantry.map((p, idx) => {
+        return `
+          <div class="meal-card">
+            <div class="meal-card-info">
+              <h3>${p.name}</h3>
+              <div class="ingredients">Količina: ${p.amount}</div>
+            </div>
+            <div class="meal-card-actions">
+              <span class="price">${p.price} RSD</span>
+              <button class="btn btn-edit" onclick="openEditModal('pantry', ${idx})">Izmeni</button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ── PLANER ──────────────────────────────────────────────
+    function renderPlanner() {
+      const container = document.getElementById("plannerBody");
+      if (!container) return;
+
+      container.innerHTML = DAYS.map(day => {
+        let rowsHtml = MEAL_TYPES.map(type => {
+          let currentSelection = weeklyPlan[day]?.[type] || "";
+          let availableMeals = meals.filter(m => m.category === type);
+          
+          let options = availableMeals.map(m => `
+            <option value="${m.name}" ${currentSelection === m.name ? 'selected' : ''}>${m.name}</option>
+          `).join("");
+
+          return `
+            <div class="planner-row">
+              <span class="meal-type-tag tag-${type.toLowerCase()}">${type}</span>
+              <select onchange="changePlan('${day}', '${type}', this.value)">
+                <option value="">— Izaberi obrok —</option>
+                ${options}
+              </select>
+            </div>
+          `;
+        }).join("");
+
+        return `
+          <div class="planner-day">
+            <div class="planner-day-header">${day}</div>
+            ${rowsHtml}
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.changePlan = function(day, type, mealName) {
+      if (!weeklyPlan[day]) weeklyPlan[day] = {};
+      weeklyPlan[day][type] = mealName;
+      saveData();
+      updateStats();
+      generateShopping(selectedDaysRange);
+    };
+
+    window.resetPlan = function() {
+      if(confirm("Da li sigurno želiš da isprazniš plan za celu nedelju?")) {
+        weeklyPlan = {};
+        saveData(); renderAll();
+      }
+    };
+
+    // ── KUPOVINA + PAMETNO SABIRANJE (ml -> l, g -> kg) ──────
+    window.generateShopping = function(daysCount = 7) {
+      selectedDaysRange = daysCount;
+      const container = document.getElementById("shoppingList");
+      if (!container) return;
+
+      let neededIngredients = {};
+      let totalCost = 0;
+
+      const activeDays = DAYS.slice(0, daysCount);
+
+      activeDays.forEach(day => {
+        MEAL_TYPES.forEach(type => {
+          let mealName = weeklyPlan[day]?.[type];
+          if (mealName) {
+            let meal = meals.find(m => m.name === mealName && m.category === type);
+            if (meal) {
+              totalCost += getMealPrice(meal);
+              meal.ingredients.forEach(ing => {
+                let key = ing.name.toLowerCase();
+                let num = parseNum(ing.amount);
+                let unit = parseUnit(ing.amount);
+                
+                // Normalizacija na bazične jedinice (ml i g) radi bezbednog sabiranja
+                if (unit === "l") { num *= 1000; unit = "ml"; }
+                if (unit === "kg") { num *= 1000; unit = "g"; }
+
+                if (!neededIngredients[key]) {
+                  neededIngredients[key] = { originalName: ing.name, totalAmount: 0, unit: unit };
+                }
+                neededIngredients[key].totalAmount += num;
+              });
+            }
+          }
         });
       });
-    });
 
-    pantry.forEach(p => {
-      const key = Object.keys(shoppingMap).find(k => k.toLowerCase() === p.name.toLowerCase());
-      if (key && p.inStock && (p.currentStock === undefined || p.currentStock > 0)) {
-        shoppingMap[key].inPantryAndStocked = true;
+      document.getElementById("weeklyTotal").textContent = Math.round(totalCost) + " RSD";
+
+      let keys = Object.keys(neededIngredients);
+      if(keys.length === 0) {
+        container.innerHTML = `<div class="empty-state">Nema planiranih obroka za izabrani period.</div>`;
+        document.getElementById("shareShoppingBtn").style.display = "none";
+        document.getElementById("uncheckedCount").textContent = "0 stavki";
+        return;
       }
-    });
 
-    const weeklyTotalEl = document.getElementById("weeklyTotal");
-    if (weeklyTotalEl) weeklyTotalEl.textContent = `${total} RSD`;
+      document.getElementById("shareShoppingBtn").style.display = "inline-flex";
 
-    const list = document.getElementById("shoppingList");
-    if (!list) return;
-    const entries = Object.entries(shoppingMap);
-    const finishBtn = document.getElementById("finishShoppingBtn");
-    const shareBtn  = document.getElementById("shareShoppingBtn");
+      let unchecked = 0;
+      container.innerHTML = keys.map(k => {
+        let item = neededIngredients[k];
+        let isChecked = localShoppingState[k] || false;
+        if (!isChecked) unchecked++;
 
-    if (entries.length === 0) {
-      list.innerHTML = `<div class="empty-state">Nema planiranih obroka.<br>Popuni plan pa generiši listu.</div>`;
-      document.getElementById("uncheckedCount").textContent = "0 / 0 stavki";
-      if (finishBtn) finishBtn.style.display = "none";
-      if (shareBtn)  shareBtn.style.display  = "none";
-      return;
+        // Pretvaranje nazad u veće jedinice ako prebaci 1000 (npr 1200ml -> 1.2 l)
+        let finalAmount = item.totalAmount;
+        let finalUnit = item.unit;
+
+        if (item.unit === "ml" && finalAmount >= 1000) {
+          finalAmount = finalAmount / 1000;
+          finalUnit = "l";
+        } else if (item.unit === "g" && finalAmount >= 1000) {
+          finalAmount = finalAmount / 1000;
+          finalUnit = "kg";
+        }
+
+        // Zaokruživanje na najviše dve decimale
+        finalAmount = Math.round(finalAmount * 100) / 100;
+
+        return `
+          <li class="shopping-item ${isChecked ? 'checked' : ''}">
+            <input type="checkbox" id="chk_${k}" ${isChecked ? 'checked' : ''} onchange="toggleShoppingItem('${k}', this.checked)">
+            <label for="chk_${k}">
+              <span class="item-name">${item.originalName}</span>
+              <span class="item-amount">${finalAmount} ${finalUnit}</span>
+            </label>
+          </li>
+        `;
+      }).join("");
+
+      document.getElementById("uncheckedCount").textContent = `${unchecked} stavki`;
+    };
+
+    window.toggleShoppingItem = function(key, isChecked) {
+      localShoppingState[key] = isChecked;
+      const el = document.getElementById(`chk_${key}`)?.closest(".shopping-item");
+      if(el) {
+        if(isChecked) el.classList.add("checked");
+        else el.classList.remove("checked");
+      }
+      
+      let unchecked = 0;
+      document.querySelectorAll("#shoppingList input[type=checkbox]").forEach(chk => {
+        if(!chk.checked) unchecked++;
+      });
+      document.getElementById("uncheckedCount").textContent = `${unchecked} stavki`;
+    };
+
+    window.shareShoppingList = function() {
+      let text = `Lista za kupovinu:\n`;
+      document.querySelectorAll("#shoppingList .shopping-item").forEach(el => {
+        let isChecked = el.querySelector("input").checked;
+        let name = el.querySelector(".item-name").textContent;
+        let amt = el.querySelector(".item-amount").textContent;
+        text += `${isChecked ? '[x]' : '[ ]'} ${name} - ${amt}\n`;
+      });
+      
+      if (navigator.share) {
+        navigator.share({ title: 'Kupovina', text: text }).catch(e => console.log(e));
+      } else {
+        navigator.clipboard.writeText(text);
+        alert("Lista je kopirana u privremenu memoriju (Clipboard)!");
+      }
+    };
+
+    // ── STATISTIKA ──────────────────────────────────────────
+    function updateStats() {
+      document.getElementById("statMealCount").textContent = meals.length;
+      
+      let totalAllMealsPrice = 0;
+      meals.forEach(m => { totalAllMealsPrice += getMealPrice(m); });
+      let avg = meals.length ? Math.round(totalAllMealsPrice / meals.length) : 0;
+      document.getElementById("statAvgPrice").textContent = avg + " RSD";
+
+      let weekTotal = 0;
+      DAYS.forEach(day => {
+        MEAL_TYPES.forEach(type => {
+          let name = weeklyPlan[day]?.[type];
+          if(name) {
+            let meal = meals.find(m => m.name === name && m.category === type);
+            if(meal) weekTotal += getMealPrice(meal);
+          }
+        });
+      });
+      document.getElementById("statWeekTotal").textContent = Math.round(weekTotal) + " RSD";
     }
 
-    if (finishBtn) finishBtn.style.display = "inline-block";
-    if (shareBtn)  shareBtn.style.display  = "inline-block";
+    // ── EDIT MODAL ──────────────────────────────────────────
+    window.openEditModal = function(mode, index) {
+      editingMode = mode;
+      editingIndex = index;
+      const modal = document.getElementById("editModal");
+      modal.classList.add("open");
 
-    let idx = 0;
-    list.innerHTML = entries.map(([name, data]) => {
-      const cleanId = `item_${idx++}`;
-      const amounts = data.amounts.length > 0 ? data.amounts.join(" + ") : "po potrebi";
-      const stocked = data.inPantryAndStocked || localShoppingState[name.toLowerCase()] === true;
-      return `
-        <li class="shopping-item ${stocked ? "checked" : ""}" id="si-${cleanId}" data-name="${encodeURIComponent(name)}" data-amount="${encodeURIComponent(amounts)}">
-          <input type="checkbox" id="cb-${cleanId}" ${stocked ? "checked" : ""} onchange="toggleShoppingItem(this,'${cleanId}')">
-          <label for="cb-${cleanId}">
-            <span class="item-name">${name}</span>
-            <span class="item-amount">${amounts} ${stocked ? '<span class="pantry-notice">Imaš na stanju</span>' : ""}</span>
-          </label>
-        </li>`;
-    }).join("");
-    updateUncheckedCount();
-  };
+      if (mode === 'meal') {
+        document.getElementById("modalTitle").textContent = "Izmeni jelo";
+        document.getElementById("modalMealFields").style.display = "flex";
+        document.getElementById("modalPantryFields").style.display = "none";
+        
+        let m = meals[index];
+        document.getElementById("editMealName").value = m.name;
+        let ingText = m.ingredients.map(i => `${i.name}:${i.amount}`).join("\n");
+        document.getElementById("editMealIngredients").value = ingText;
+        selectEditCat(m.category);
+      } else {
+        document.getElementById("modalTitle").textContent = "Izmeni namirnicu";
+        document.getElementById("modalMealFields").style.display = "none";
+        document.getElementById("modalPantryFields").style.display = "flex";
 
-  window.toggleShoppingItem = function(cb, id) {
-    const li = document.getElementById(`si-${id}`);
-    if (!li) return;
-    const name   = decodeURIComponent(li.getAttribute("data-name"));
-    const amount = decodeURIComponent(li.getAttribute("data-amount"));
-    if (cb.checked) {
-      li.classList.add("checked");
-      localShoppingState[name.toLowerCase()] = true;
-      const pi = pantry.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
-      if (pi > -1) { pantry[pi].inStock = true; pantry[pi].currentStock = parseNum(pantry[pi].amount); }
-      else pantry.push({ name, amount, price: 0, inStock: true, currentStock: parseNum(amount) });
-    } else {
-      li.classList.remove("checked");
-      localShoppingState[name.toLowerCase()] = false;
-      const pi = pantry.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
-      if (pi > -1) { pantry[pi].inStock = false; pantry[pi].currentStock = 0; }
+        let p = pantry[index];
+        document.getElementById("editPantryName").value = p.name;
+        document.getElementById("editPantryAmount").value = p.amount;
+        document.getElementById("editPantryPrice").value = p.price;
+      }
+    };
+
+    window.closeEditModal = function() {
+      document.getElementById("editModal").classList.remove("open");
+    };
+
+    window.handleModalClick = function(e) {
+      if(e.target.classList.contains("modal-overlay")) closeEditModal();
+    };
+
+    window.handleModalDelete = function() {
+      if(confirm("Da li ste sigurni da želite trajno da obrišete ovu stavku?")) {
+        if(editingMode === 'meal') {
+          meals.splice(editingIndex, 1);
+        } else {
+          pantry.splice(editingIndex, 1);
+        }
+        saveData(); renderAll(); closeEditModal();
+      }
+    };
+
+    window.saveModalEdit = function() {
+      if(editingMode === 'meal') {
+        let name = document.getElementById("editMealName").value.trim();
+        if(!name) return;
+        meals[editingIndex].name = name;
+        meals[editingIndex].category = editSelectedCat;
+        meals[editingIndex].ingredients = parseIngredients(document.getElementById("editMealIngredients").value);
+      } else {
+        let name = document.getElementById("editPantryName").value.trim();
+        let amt = document.getElementById("editPantryAmount").value.trim();
+        let pr = parseFloat(document.getElementById("editPantryPrice").value);
+        if(!name || !amt || isNaN(pr)) return;
+        pantry[editingIndex] = { name, amount: amt, price: pr };
+      }
+      saveData(); renderAll(); closeEditModal();
+    };
+
+    // ── KALENDAR MODAL ──────────────────────────────────────
+    window.openCalendarModal = function() {
+      document.getElementById("calendarModal").classList.add("open");
+      renderCalendarGrid();
+    };
+
+    window.closeCalendarModal = function() {
+      document.getElementById("calendarModal").classList.remove("open");
+    };
+
+    window.handleCalendarModalClick = function(e) {
+      if(e.target.classList.contains("modal-overlay")) closeCalendarModal();
+    };
+
+    function renderCalendarGrid() {
+      const grid = document.getElementById("calendarDaysGrid");
+      if(!grid) return;
+      
+      let now = new Date();
+      let labelMonth = now.toLocaleString("sr-RS", { month: 'long' }).toUpperCase();
+      document.getElementById("calModalTitle").textContent = `${labelMonth} ${now.getFullYear()}`;
+
+      let firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+      let startDayIdx = firstDay.getDay() - 1; 
+      if(startDayIdx < 0) startDayIdx = 6; 
+
+      let daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      let html = "";
+
+      for(let i=0; i<startDayIdx; i++) {
+        html += `<div class="cal-cell empty"></div>`;
+      }
+
+      for(let d=1; d<=daysInMonth; d++) {
+        let dateKey = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        let isToday = now.getDate() === d;
+        let isScratched = scratchedDates[dateKey] || false;
+
+        html += `
+          <div class="cal-cell ${isToday ? 'today' : ''} ${isScratched ? 'scratched' : ''}" onclick="toggleScratchDate('${dateKey}')">
+            ${d}
+            <div class="scratch-line"></div>
+          </div>
+        `;
+      }
+      grid.innerHTML = html;
     }
-    saveData(); updateUncheckedCount();
-  };
 
-  function updateUncheckedCount() {
-    const all     = document.querySelectorAll("#shoppingList .shopping-item").length;
-    const checked = document.querySelectorAll("#shoppingList .shopping-item.checked").length;
-    const el = document.getElementById("uncheckedCount");
-    if (el) el.textContent = `${all - checked} / ${all} stavki`;
-  }
+    window.toggleScratchDate = function(key) {
+      scratchedDates[key] = !scratchedDates[key];
+      saveData();
+      renderCalendarGrid();
+    };
 
-  window.shareShoppingList = function() {
-    const items = document.querySelectorAll("#shoppingList .shopping-item:not(.checked)");
-    if (items.length === 0) { alert("Sve stavke su već kupljene!"); return; }
-    let text = "🛒 LISTA ZA KUPOVINU:\n\n";
-    items.forEach(li => {
-      text += `☐ ${decodeURIComponent(li.getAttribute("data-name"))} (${decodeURIComponent(li.getAttribute("data-amount"))})\n`;
-    });
-    if (navigator.share) navigator.share({ title: "Lista za kupovinu", text }).catch(() => {});
-    else navigator.clipboard.writeText(text).then(() => alert("Kopirano u clipboard!")).catch(() => alert(text));
-  };
+    // ── SWIPE INFRASTRUCTURE ────────────────────────────────
+    let touchStartX = 0;
+    let touchEndX = 0;
 
-  window.finishShopping = function() {
-    const checked = document.querySelectorAll("#shoppingList .shopping-item.checked");
-    if (checked.length === 0) { alert("Nisi štiklirao/la nijednu stavku."); return; }
-    if (!confirm("Završavaš kupovinu? Sve štiklirane namirnice idu u Špajz.")) return;
-    checked.forEach(li => {
-      const name = decodeURIComponent(li.getAttribute("data-name"));
-      const pi = pantry.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
-      if (pi > -1) { pantry[pi].inStock = true; pantry[pi].currentStock = parseNum(pantry[pi].amount); }
-    });
-    localShoppingState = {};
-    saveData(); renderAll();
-  };
-
-  // ── STATS ────────────────────────────────────────────────
-  function updateStats() {
-    const prices = meals.map(m => getMealPrice(m));
-    const avg    = meals.length ? Math.round(prices.reduce((a,b) => a+b, 0) / meals.length) : 0;
-    let weekTotal = 0;
-    DAYS.forEach(day => MEAL_TYPES.forEach(type => {
-      const meal = meals.find(m => m.name === weeklyPlan[day]?.[type]);
-      if (meal) weekTotal += getMealPrice(meal);
-    }));
-    const mc = document.getElementById("statMealCount");
-    const ap = document.getElementById("statAvgPrice");
-    const wt = document.getElementById("statWeekTotal");
-    if (mc) mc.textContent = meals.length;
-    if (ap) ap.textContent = `${avg} RSD`;
-    if (wt) wt.textContent = `${weekTotal} RSD`;
-  }
-
-  // ── KALENDAR ─────────────────────────────────────────────
-  window.openCalendarModal = function() {
-    calMonth = new Date().getMonth();
-    calYear  = new Date().getFullYear();
-    renderCalendarGrid();
-    document.getElementById("calendarModal").classList.add("open");
-  };
-
-  window.closeCalendarModal = function() {
-    document.getElementById("calendarModal").classList.remove("open");
-  };
-
-  window.handleCalendarModalClick = function(e) {
-    if (e.target === document.getElementById("calendarModal")) window.closeCalendarModal();
-  };
-
-  window.changeMonth = function(dir) {
-    calMonth += dir;
-    if (calMonth > 11) { calMonth = 0; calYear++; }
-    else if (calMonth < 0) { calMonth = 11; calYear--; }
-    renderCalendarGrid();
-  };
-
-  function renderCalendarGrid() {
-    const grid    = document.getElementById("calendarDaysGrid");
-    const titleEl = document.getElementById("calModalTitle");
-    if (!grid || !titleEl) return;
-    const MONTHS = ["Januar","Februar","Mart","April","Maj","Jun","Jul","Avgust","Septembar","Oktobar","Novembar","Decembar"];
-    titleEl.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 5px">
-        <button class="btn btn-ghost" style="font-size:1.3rem;padding:4px 12px;font-weight:600;color:var(--text)" onclick="changeMonth(-1)">‹</button>
-        <span style="font-size:1rem;font-weight:600">${MONTHS[calMonth]} ${calYear}</span>
-        <button class="btn btn-ghost" style="font-size:1.3rem;padding:4px 12px;font-weight:600;color:var(--text)" onclick="changeMonth(1)">›</button>
-      </div>`;
-    grid.innerHTML = "";
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
-    let firstDay = new Date(calYear, calMonth, 1).getDay();
-    firstDay = firstDay === 0 ? 6 : firstDay - 1;
-    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
-    for (let i = 0; i < firstDay; i++) {
-      const e = document.createElement("div"); e.className = "cal-cell empty"; grid.appendChild(e);
-    }
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = `${calYear}-${String(calMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-      const cell = document.createElement("div");
-      cell.className = `cal-cell ${scratchedDates[dateStr] ? "scratched" : ""} ${dateStr === todayStr ? "today" : ""}`;
-      cell.innerHTML = `${day}<span class="scratch-line"></span>`;
-      cell.onclick = () => {
-        if (scratchedDates[dateStr]) delete scratchedDates[dateStr];
-        else scratchedDates[dateStr] = true;
-        cell.classList.toggle("scratched");
-        saveData();
-      };
-      grid.appendChild(cell);
-    }
-  }
-
-  // ── HEADER ───────────────────────────────────────────────
-  function initHeaderLabels() {
-    const now = new Date();
-    const dateLabel = document.getElementById("dateLabel");
-    const weekLabel = document.getElementById("weekLabel");
-    if (dateLabel) dateLabel.textContent = `${String(now.getDate()).padStart(2,"0")}.${String(now.getMonth()+1).padStart(2,"0")}.${now.getFullYear()}.`;
-    if (weekLabel) {
-      const t = new Date(now.valueOf());
-      const d = (now.getDay() + 6) % 7;
-      t.setDate(t.getDate() - d + 3);
-      const ft = t.valueOf();
-      t.setMonth(0, 1);
-      if (t.getDay() !== 4) t.setMonth(0, 1 + ((4 - t.getDay() + 7) % 7));
-      weekLabel.textContent = `NEDELJA ${1 + Math.ceil((ft - t) / 604800000)}, ${now.getFullYear()}`;
-    }
-  }
-
-  // ── SWIPE ────────────────────────────────────────────────
-  function initSwipe() {
     const area = document.getElementById("swipeArea");
-    let sx = 0, sy = 0;
-    const skip = e => e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.tagName === "SELECT" || e.target.closest("#editModal") || e.target.closest("#calendarModal") || e.target.classList.contains("btn-qty");
-    area.addEventListener("touchstart", e => { if (skip(e)) return; sx = e.changedTouches[0].screenX; sy = e.changedTouches[0].screenY; }, { passive: true });
-    area.addEventListener("touchend", e => {
-      if (skip(e)) return;
-      const dx = e.changedTouches[0].screenX - sx;
-      const dy = e.changedTouches[0].screenY - sy;
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 70) {
-        const cur = document.querySelector(".tab-content.active");
-        if (!cur) return;
-        const ci = TAB_ORDER.indexOf(cur.id);
-        if (dx > 0 && ci > 0) window.showTab(TAB_ORDER[ci-1], null, "slide-in-left");
-        else if (dx < 0 && ci < TAB_ORDER.length-1) window.showTab(TAB_ORDER[ci+1], null, "slide-in-right");
-      }
+    area.addEventListener("touchstart", e => {
+      touchStartX = e.changedTouches[0].screenX;
     }, { passive: true });
-  }
 
-  // ── INIT ─────────────────────────────────────────────────
-  document.getElementById("mealSearch")?.addEventListener("input", renderMealsList);
-  initHeaderLabels();
-  initRealtimeSync();
-  initSwipe();
-</script>
+    area.addEventListener("touchend", e => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+      const diff = touchEndX - touchStartX;
+      if (Math.abs(diff) < 60) return; 
+      
+      const cur = document.querySelector(".tab-content.active");
+      if(!cur) return;
+      let idx = TAB_ORDER.indexOf(cur.id);
+
+      if (diff < 0 && idx < TAB_ORDER.length - 1) {
+        showTab(TAB_ORDER[idx + 1], null, "slide-in-right");
+      } else if (diff > 0 && idx > 0) {
+        showTab(TAB_ORDER[idx - 1], null, "slide-in-left");
+      }
+    }
+
+    // ── INICIJALIZACIJA ─────────────────────────────────────
+    initRealtimeSync();
+  </script>
 </body>
 </html>
