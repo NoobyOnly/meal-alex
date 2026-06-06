@@ -88,7 +88,6 @@
     .meal-card .ingredients { font-size: 0.75rem; color: var(--muted); margin-top: 5px; line-height: 1.7; }
     .meal-card-actions { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
 
-    /* Kategorija dugmad */
     .cat-picker { display: flex; gap: 6px; }
     .cat-btn { flex: 1; padding: 7px 4px; border-radius: var(--radius-sm); border: 1px solid var(--border); font-family: inherit; font-size: 0.75rem; font-weight: 600; cursor: pointer; background: var(--bg); color: var(--muted); transition: all 0.15s; text-align: center; }
     .cat-btn:active { transform: scale(0.96); }
@@ -509,6 +508,41 @@
     return Math.round(meal.ingredients.reduce((s, i) => s + calcIngPrice(i.name, i.amount), 0));
   }
 
+  // ── NOVO: sabiranje količina za listu kupovine ───────────
+  function sumAmounts(amounts) {
+    let totalMl  = 0;
+    let totalG   = 0;
+    let totalKom = 0;
+    let other    = [];
+
+    amounts.forEach(a => {
+      const s = String(a).toLowerCase().trim();
+      const n = parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+
+      if (s.includes("kg")) {
+        totalG += n * 1000;
+      } else if (s.includes("ml")) {
+        totalMl += n;
+      } else if (s.includes("l") && !s.includes("ml")) {
+        totalMl += n * 1000;
+      } else if (s.includes("g") && !s.includes("kg")) {
+        totalG += n;
+      } else if (s.includes("kom")) {
+        totalKom += n;
+      } else {
+        other.push(a);
+      }
+    });
+
+    const parts = [];
+    if (totalMl > 0)  parts.push(totalMl  >= 1000 ? `${totalMl  / 1000}L`  : `${totalMl}ml`);
+    if (totalG  > 0)  parts.push(totalG   >= 1000 ? `${totalG   / 1000}kg` : `${totalG}g`);
+    if (totalKom > 0) parts.push(`${totalKom}kom`);
+    if (other.length) parts.push(...other);
+
+    return parts.join(" + ") || "po potrebi";
+  }
+
   function renderAll() {
     renderPlanner();
     renderMealsList();
@@ -629,6 +663,9 @@
     container.innerHTML = "";
     pantry.forEach((item, idx) => {
       const cur = item.currentStock !== undefined ? item.currentStock : parseNum(item.amount);
+      // Izvuci jedinicu mere iz originalnog pakovanja i prikazi samo broj sa jedinicom
+      const unit = String(item.amount).replace(/[0-9.]/g, "").trim() || "";
+      const stockDisplay = unit ? `${cur}${unit}` : `${cur}`;
       const div = document.createElement("div");
       div.className = "meal-card";
       div.style.padding = "0.6rem 1rem";
@@ -636,7 +673,7 @@
         <div class="meal-card-info" style="display:flex;flex-direction:column;gap:4px;padding-right:0.5rem">
           <h3>${item.name}</h3>
           <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap">
-            <span class="badge" style="font-family:inherit;font-weight:500;background:#f1f5f9">Na stanju: ${cur} od ${item.amount}</span>
+            <span class="badge" style="font-family:inherit;font-weight:500;background:#f1f5f9">Na stanju: ${stockDisplay}</span>
             <span class="price" style="font-size:0.78rem;color:var(--text);background:var(--surface);padding:1px 6px;border-radius:4px;border:1px solid var(--border)">${item.price} RSD</span>
           </div>
         </div>
@@ -821,7 +858,8 @@
     let idx = 0;
     list.innerHTML = entries.map(([name, data]) => {
       const cleanId = `item_${idx++}`;
-      const amounts = data.amounts.length > 0 ? data.amounts.join(" + ") : "po potrebi";
+      // IZMENA: koristimo sumAmounts umesto join(" + ")
+      const amounts = data.amounts.length > 0 ? sumAmounts(data.amounts) : "po potrebi";
       const stocked = data.inPantryAndStocked || localShoppingState[name.toLowerCase()] === true;
       return `
         <li class="shopping-item ${stocked ? "checked" : ""}" id="si-${cleanId}" data-name="${encodeURIComponent(name)}" data-amount="${encodeURIComponent(amounts)}">
