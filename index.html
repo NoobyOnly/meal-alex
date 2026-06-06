@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meal & Pantry Planner</title>
+  <title>Aleksandra Ivković</title>
   <style>
-    /* Osnovni stilovi kako bi aplikacija izgledala moderno i funkcionalno */
     :root {
       --bg-color: #f4f7f6;
       --card-bg: #ffffff;
@@ -114,7 +113,7 @@
     .modal-overlay.open { display: flex; }
     .modal-content { background: #fff; width: 100%; max-width: 450px; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 15px; max-height: 90vh; overflow-y: auto; }
     .modal-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 18px; }
-    .modal-body { display: flex; flex-direction: column; gap: 12px; }
+    .modal-body { display: flex; flex-direction: column; gap: 12px; width: 100%; }
     .modal-footer { display: flex; gap: 10px; margin-top: 10px; }
     .modal-footer .btn { flex: 1; }
 
@@ -147,6 +146,7 @@
       <span class="pill" id="dateLabel">-- --</span>
       <span class="pill" style="cursor:pointer;" onclick="openCalendarModal()">📅 KALENDAR</span>
     </div>
+    <div style="font-weight: bold; font-size: 16px; color: var(--text); font-style: italic;">Aleksandra Ivković</div>
     <div class="header-pills">
       <div class="pill sync">
         <div id="syncDot" class="sync-dot"></div>
@@ -392,7 +392,7 @@
       if (id === "shoppingTab") generateShopping(selectedDaysRange);
     };
 
-    // ── HELPERS / PARSERI SVE U JEDNOM ──────────────────────
+    // ── HELPERS / PARSERI ───────────────────────────────────
     function parseIngredients(text) {
       if (!text) return [];
       return text.split("\n").map(line => {
@@ -406,7 +406,6 @@
       return isNaN(n) ? 1 : n;
     }
 
-    // Ekstrakcija čiste merne jedinice
     function parseUnit(str) {
       return String(str || "").replace(/[0-9.]/g, "").trim().toLowerCase();
     }
@@ -551,7 +550,6 @@
         return;
       }
 
-      // MODIFIKACIJA: Prikazuje se isključivo uneta količina (npr. 5kom ili 240g)
       container.innerHTML = pantry.map((p, idx) => {
         return `
           <div class="meal-card">
@@ -640,7 +638,6 @@
                 let num = parseNum(ing.amount);
                 let unit = parseUnit(ing.amount);
                 
-                // Normalizacija na bazične jedinice (ml i g) radi bezbednog sabiranja
                 if (unit === "l") { num *= 1000; unit = "ml"; }
                 if (unit === "kg") { num *= 1000; unit = "g"; }
 
@@ -672,7 +669,6 @@
         let isChecked = localShoppingState[k] || false;
         if (!isChecked) unchecked++;
 
-        // Pretvaranje nazad u veće jedinice ako prebaci 1000 (npr 1200ml -> 1.2 l)
         let finalAmount = item.totalAmount;
         let finalUnit = item.unit;
 
@@ -684,7 +680,6 @@
           finalUnit = "kg";
         }
 
-        // Zaokruživanje na najviše dve decimale
         finalAmount = Math.round(finalAmount * 100) / 100;
 
         return `
@@ -874,7 +869,7 @@
       renderCalendarGrid();
     };
 
-    // ── SWIPE INFRASTRUCTURE ────────────────────────────────
+    // ── SWIPE KONTROLE ──────────────────────────────────────
     let touchStartX = 0;
     let touchEndX = 0;
 
